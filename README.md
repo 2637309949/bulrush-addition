@@ -10,7 +10,7 @@ func init() {
 }
 
 // use cross-module references
-User, _ := utils.Mgo.Model("user")
+User, _ := Mgo.Model("user")
 err := User.Find(match).All(&users)
 ```
 ## MIT License

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/2637309949/bulrush"
-	"github.com/2637309949/bulrush/utils"
 	"github.com/globalsign/mgo"
 )
 
@@ -46,7 +45,7 @@ func (mgo *Mgo) Register(manifest map[string]interface{}) {
 func (mgo *Mgo) Model(name string) (*mgo.Collection, map[string]interface{}) {
 	var db string
 	var collect string
-	manifest := utils.Find(mgo.manifests, func(item interface{}) bool {
+	manifest := bulrush.Find(mgo.manifests, func(item interface{}) bool {
 		flag := item.(map[string]interface{})["name"].(string) == name
 		return flag
 	}).(map[string]interface{})
@@ -100,7 +99,7 @@ func obSession(config *bulrush.Config) *mgo.Session {
 	addrs, _ := config.List("mongo.addrs")
 	if addrs != nil && len(addrs) > 0 {
 		dial := obDialInfo(config)
-		session := utils.LeftSV(mgo.DialWithInfo(dial)).(*mgo.Session)
+		session := bulrush.LeftSV(mgo.DialWithInfo(dial)).(*mgo.Session)
 		return session
 	}
 	return nil
