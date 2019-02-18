@@ -4,14 +4,19 @@ Provides cross-module references.
 ```go
 // create cross-module references
 func init() {
-	WC     = bulrush.NewCfg(CONFIGPATH)
-	Mgo    = bulrush.NewMgo(WC)
-	Rds    = bulrush.NewRds(WC)
+	WC = bulrush.NewCfg(CONFIGPATH)
+	Mongo = mongo.New(WC)
+	Redis = redis.New(WC)
 }
 
 // use cross-module references
-User, _ := Mgo.Model("user")
-err := User.Find(match).All(&users)
+func AddUsers(users []interface{}) {
+	User, _ := addition.Mongo.Model("user")
+	err := User.Insert(users...)
+	if err != nil {
+		panic(err)
+	}
+}
 ```
 ## MIT License
 
