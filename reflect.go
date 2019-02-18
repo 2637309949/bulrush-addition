@@ -12,8 +12,8 @@ import (
 	"reflect"
 )
 
-// createSlice create slice by variable
-func createSlice(target interface{}) interface{} {
+// CreateSlice create slice by variable
+func CreateSlice(target interface{}) interface{} {
 	tagetType := reflect.TypeOf(target)
 	if tagetType.Kind() == reflect.Ptr {
 		tagetType = tagetType.Elem()
@@ -22,8 +22,8 @@ func createSlice(target interface{}) interface{} {
 	return targetSlice
 }
 
-// createObject create object by variable
-func createObject(target interface{}) interface{} {
+// CreateObject create object by variable
+func CreateObject(target interface{}) interface{} {
 	tagetType := reflect.TypeOf(target)
 	if tagetType.Kind() == reflect.Ptr {
 		tagetType = tagetType.Elem()

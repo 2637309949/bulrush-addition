@@ -1,4 +1,4 @@
-package addition
+package redis
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 )
 
 // SaveToken save a token
-func (hook *rdsHooks) SaveToken(token map[string]interface{}) {
+func (hook *Hooks) SaveToken(token map[string]interface{}) {
 	accessToken, _ := token["accessToken"]
 	refreshToken, _ := token["refreshToken"]
 	value, _ := json.Marshal(token)
@@ -15,7 +15,7 @@ func (hook *rdsHooks) SaveToken(token map[string]interface{}) {
 }
 
 // RevokeToken revoke a token
-func (hook *rdsHooks) RevokeToken(accessToken string) bool {
+func (hook *Hooks) RevokeToken(accessToken string) bool {
 	status, err := hook.Client.Del("TOKEN:" + accessToken).Result()
 	if err != nil {
 		return false
@@ -26,7 +26,7 @@ func (hook *rdsHooks) RevokeToken(accessToken string) bool {
 }
 
 // FindToken find a token
-func (hook *rdsHooks) FindToken(accessToken string, refreshToken string) map[string]interface{} {
+func (hook *Hooks) FindToken(accessToken string, refreshToken string) map[string]interface{} {
 	var imapGet map[string]interface{}
 	var token string
 	if accessToken != "" {

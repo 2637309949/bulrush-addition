@@ -1,4 +1,4 @@
-package addition
+package mongo
 
 import (
 	"encoding/json"
@@ -11,21 +11,31 @@ import (
 	"github.com/globalsign/mgo/bson"
 )
 
-// mgoHooks -
-type mgoHooks struct {
+// Hook type defined
+type Hook struct {
 	One  func(name string) func(c *gin.Context)
 	List func(name string) func(c *gin.Context)
 }
 
-// list -
-func list(mgo *Mgo) func(string) func(c *gin.Context) {
+// list hook
+func list(mgo *Mongo) func(string) func(c *gin.Context) {
 	return func(name string) func(c *gin.Context) {
 		return func(c *gin.Context) {
 			var match map[string]interface{}
-			Model, manifest := mgo.Model(name)
-			target := LeftOkV(manifest["reflector"])
-			list := createSlice(target)
-
+			Model, error := mgo.Model(name)
+			if error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": error.Error(),
+				})
+				return
+			}
+			list, error := mgo.Vars(name)
+			if error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": error.Error(),
+				})
+				return
+			}
 			cond := c.DefaultQuery("cond", "%7B%7D")
 			page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 			size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
@@ -71,14 +81,25 @@ func list(mgo *Mgo) func(string) func(c *gin.Context) {
 	}
 }
 
-// one -
-func one(mgo *Mgo) func(string) func(c *gin.Context) {
+// one hook
+func one(mgo *Mongo) func(string) func(c *gin.Context) {
 	return func(name string) func(c *gin.Context) {
 		return func(c *gin.Context) {
 			id := c.Param("id")
-			Model, manifest := mgo.Model(name)
-			target := LeftOkV(manifest["reflector"])
-			one := createObject(target)
+			Model, error := mgo.Model(name)
+			if error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": error.Error(),
+				})
+				return
+			}
+			one, error := mgo.Var(name)
+			if error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": error.Error(),
+				})
+				return
+			}
 			isOj := bson.IsObjectIdHex(id)
 			if !isOj {
 				c.JSON(http.StatusNotAcceptable, gin.H{
@@ -98,8 +119,8 @@ func one(mgo *Mgo) func(string) func(c *gin.Context) {
 	}
 }
 
-// create
-func create(mgo *Mgo) func(string) func(c *gin.Context) {
+// create hook
+func create(mgo *Mongo) func(string) func(c *gin.Context) {
 	return func(name string) func(c *gin.Context) {
 		return func(c *gin.Context) {
 

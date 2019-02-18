@@ -1,28 +1,28 @@
-package addition
+package redis
 
 import (
 	"github.com/2637309949/bulrush"
 	"github.com/go-redis/redis"
 )
 
-// rdsHooks -
-type rdsHooks struct {
+// Hooks -
+type Hooks struct {
 	Client *redis.Client
 }
 
-// Rds some common function
-type Rds struct {
+// Redis some common function
+type Redis struct {
 	Client *redis.Client
-	Hooks  *rdsHooks
+	Hooks  *Hooks
 	config *bulrush.Config
 }
 
-// NewRds new redis instance
-func NewRds(config *bulrush.Config) *Rds {
+// New new redis instance
+func New(config *bulrush.Config) *Redis {
 	client := obClient(config)
-	rds := &Rds{
+	rds := &Redis{
 		Client: client,
-		Hooks: &rdsHooks{
+		Hooks: &Hooks{
 			Client: client,
 		},
 		config: config,

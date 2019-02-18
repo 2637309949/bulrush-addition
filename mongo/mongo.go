@@ -1,26 +1,27 @@
-package addition
+package mongo
 
 import (
 	"errors"
 	"fmt"
 
 	"github.com/2637309949/bulrush"
+	addition "github.com/2637309949/bulrush-addition"
 	"github.com/globalsign/mgo"
 )
 
-// Mgo -
-type Mgo struct {
+// Mongo Type Defined
+type Mongo struct {
 	Session   *mgo.Session
-	Hooks     *mgoHooks
+	Hooks     *Hook
 	config    *bulrush.Config
 	manifests []interface{}
 }
 
-// NewMgo New mongo instance
-func NewMgo(config *bulrush.Config) *Mgo {
+// New New mongo instance
+func New(config *bulrush.Config) *Mongo {
 	session := obSession(config)
-	mgo := &Mgo{
-		Hooks:     &mgoHooks{},
+	mgo := &Mongo{
+		Hooks:     &Hook{},
 		Session:   session,
 		manifests: make([]interface{}, 0),
 		config:    config,
@@ -30,19 +31,47 @@ func NewMgo(config *bulrush.Config) *Mgo {
 	return mgo
 }
 
-// Register -
-func (mgo *Mgo) Register(manifest map[string]interface{}) {
-	var ok = true
-	_, ok = manifest["name"]
-	_, ok = manifest["reflector"]
-	if !ok {
-		panic(errors.New("name and reflector params must be provided"))
+// Register model
+func (mgo *Mongo) Register(manifest map[string]interface{}) {
+	if _, ok := manifest["name"]; !ok {
+		panic(errors.New("name params must be provided"))
+	}
+	if _, ok := manifest["reflector"]; !ok {
+		panic(errors.New("reflector params must be provided"))
 	}
 	mgo.manifests = append(mgo.manifests, manifest)
 }
 
-// Model -
-func (mgo *Mgo) Model(name string) (*mgo.Collection, map[string]interface{}) {
+// Vars return array of Var
+func (mgo *Mongo) Vars(name string) (interface{}, error) {
+	manifest := bulrush.Find(mgo.manifests, func(item interface{}) bool {
+		flag := item.(map[string]interface{})["name"].(string) == name
+		return flag
+	}).(map[string]interface{})
+	if manifest == nil {
+		return nil, fmt.Errorf("manifest %s not found", name)
+	}
+	target := addition.LeftOkV(manifest["reflector"])
+	vars := addition.CreateSlice(target)
+	return vars, nil
+}
+
+// Var return  Var
+func (mgo *Mongo) Var(name string) (interface{}, error) {
+	manifest := bulrush.Find(mgo.manifests, func(item interface{}) bool {
+		flag := item.(map[string]interface{})["name"].(string) == name
+		return flag
+	}).(map[string]interface{})
+	if manifest == nil {
+		return nil, fmt.Errorf("manifest %s not found", name)
+	}
+	target := addition.LeftOkV(manifest["reflector"])
+	obj := addition.CreateObject(target)
+	return obj, nil
+}
+
+// Model return instance
+func (mgo *Mongo) Model(name string) (*mgo.Collection, error) {
 	var db string
 	var collect string
 	manifest := bulrush.Find(mgo.manifests, func(item interface{}) bool {
@@ -50,7 +79,7 @@ func (mgo *Mgo) Model(name string) (*mgo.Collection, map[string]interface{}) {
 		return flag
 	}).(map[string]interface{})
 	if manifest == nil {
-		panic(fmt.Errorf("manifest %s not found", name))
+		return nil, fmt.Errorf("manifest %s not found", name)
 	}
 
 	if dbName, ok := manifest["db"]; ok && dbName.(string) != "" {
@@ -65,10 +94,10 @@ func (mgo *Mgo) Model(name string) (*mgo.Collection, map[string]interface{}) {
 		collect = name
 	}
 	model := mgo.Session.DB(db).C(collect)
-	return model, manifest
+	return model, nil
 }
 
-// obDialInfo -
+// obDialInfo create mgo config
 func obDialInfo(config *bulrush.Config) *mgo.DialInfo {
 	addrs := config.GetStrList("mongo.addrs", nil)
 	dial := &mgo.DialInfo{}
@@ -94,7 +123,7 @@ func obDialInfo(config *bulrush.Config) *mgo.DialInfo {
 	return dial
 }
 
-// obSession -
+// obSession obtain session
 func obSession(config *bulrush.Config) *mgo.Session {
 	addrs, _ := config.List("mongo.addrs")
 	if addrs != nil && len(addrs) > 0 {
