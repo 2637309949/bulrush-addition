@@ -13,7 +13,7 @@ func Some(target interface{}, initValue interface{}) interface{} {
 	return initValue
 }
 
-// Find -
+// Find elements
 func Find(arrs []interface{}, matcher func(interface{}) bool) interface{} {
 	var target interface{}
 	for _, item := range arrs {

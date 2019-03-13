@@ -19,7 +19,7 @@ type Mongo struct {
 
 // New New mongo instance
 func New(config *bulrush.Config) *Mongo {
-	session := obSession(config)
+	session := getSession(config)
 	mgo := &Mongo{
 		Hooks:     &Hook{},
 		Session:   session,
@@ -80,6 +80,7 @@ func (mgo *Mongo) Model(name string) (*mgo.Collection, error) {
 		flag := item.(map[string]interface{})["name"].(string) == name
 		return flag
 	}).(map[string]interface{})
+
 	if manifest == nil {
 		return nil, fmt.Errorf("manifest %s not found", name)
 	}
@@ -95,12 +96,13 @@ func (mgo *Mongo) Model(name string) (*mgo.Collection, error) {
 	} else {
 		collect = name
 	}
+
 	model := mgo.Session.DB(db).C(collect)
 	return model, nil
 }
 
-// obDialInfo create mgo config
-func obDialInfo(config *bulrush.Config) *mgo.DialInfo {
+// getMgoCfg create mgo config
+func getMgoCfg(config *bulrush.Config) *mgo.DialInfo {
 	addrs := config.GetStrList("mongo.addrs", nil)
 	dial := &mgo.DialInfo{}
 	dial.Addrs = addrs
@@ -125,11 +127,11 @@ func obDialInfo(config *bulrush.Config) *mgo.DialInfo {
 	return dial
 }
 
-// obSession obtain session
-func obSession(config *bulrush.Config) *mgo.Session {
+// getSession obtain session
+func getSession(config *bulrush.Config) *mgo.Session {
 	addrs, _ := config.List("mongo.addrs")
 	if addrs != nil && len(addrs) > 0 {
-		dial := obDialInfo(config)
+		dial := getMgoCfg(config)
 		session := bulrush.LeftSV(mgo.DialWithInfo(dial)).(*mgo.Session)
 		return session
 	}

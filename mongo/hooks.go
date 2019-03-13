@@ -1,3 +1,11 @@
+/**
+ * @author [double]
+ * @email [2637309949@qq.com]
+ * @create date 2019-03-13 17:25:16
+ * @modify date 2019-03-13 17:25:16
+ * @desc [description]
+ */
+
 package mongo
 
 import (
@@ -20,7 +28,7 @@ type Hook struct {
 	Update func(name string) func(c *gin.Context)
 }
 
-// PUFormat Post Update Format
+// PUFormat Post Update Format define
 type PUFormat struct {
 	Cond map[string]interface{} `bson:"cond" form:"cond" json:"cond" xml:"cond"`
 	Muti bool                   `bson:"muti" form:"muti" json:"muti" xml:"muti"`
@@ -199,21 +207,8 @@ func update(mgo *Mongo) func(string) func(c *gin.Context) {
 				return
 			}
 
-			bind, error := mgo.Vars(name)
-
-			if error != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"message": error.Error(),
-				})
-				fmt.Printf("error: %s", error.Error())
-				return
-			}
-
-			jsonUpData, _ := json.Marshal(puDate.Doc)
-			json.Unmarshal(jsonUpData, &bind)
-
 			if puDate.Muti {
-				if _, error := Model.UpdateAll(puDate.Cond, &bind); error != nil {
+				if _, error := Model.UpdateAll(puDate.Cond, puDate.Doc); error != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{
 						"message": error.Error(),
 					})
@@ -221,7 +216,7 @@ func update(mgo *Mongo) func(string) func(c *gin.Context) {
 					return
 				}
 			} else {
-				if error := Model.Update(puDate.Cond, &bind); error != nil {
+				if error := Model.Update(puDate.Cond, puDate.Doc); error != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{
 						"message": error.Error(),
 					})
