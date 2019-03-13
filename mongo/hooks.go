@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"net/url"
@@ -13,11 +14,20 @@ import (
 
 // Hook type defined
 type Hook struct {
-	One  func(name string) func(c *gin.Context)
-	List func(name string) func(c *gin.Context)
+	One    func(name string) func(c *gin.Context)
+	List   func(name string) func(c *gin.Context)
+	Create func(name string) func(c *gin.Context)
+	Update func(name string) func(c *gin.Context)
 }
 
-// list hook
+// PUFormat Post Update Format
+type PUFormat struct {
+	Cond map[string]interface{} `bson:"cond" form:"cond" json:"cond" xml:"cond"`
+	Muti bool                   `bson:"muti" form:"muti" json:"muti" xml:"muti"`
+	Doc  interface{}            `bson:"doc" form:"doc" json:"doc" xml:"doc" `
+}
+
+// list doc
 func list(mgo *Mongo) func(string) func(c *gin.Context) {
 	return func(name string) func(c *gin.Context) {
 		return func(c *gin.Context) {
@@ -81,7 +91,7 @@ func list(mgo *Mongo) func(string) func(c *gin.Context) {
 	}
 }
 
-// one hook
+// one doc
 func one(mgo *Mongo) func(string) func(c *gin.Context) {
 	return func(name string) func(c *gin.Context) {
 		return func(c *gin.Context) {
@@ -119,11 +129,110 @@ func one(mgo *Mongo) func(string) func(c *gin.Context) {
 	}
 }
 
-// create hook
+// create doc
 func create(mgo *Mongo) func(string) func(c *gin.Context) {
 	return func(name string) func(c *gin.Context) {
 		return func(c *gin.Context) {
+			Model, error := mgo.Model(name)
+			if error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": error.Error(),
+				})
+				fmt.Printf("error: %s", error.Error())
+				return
+			}
 
+			binds, error := mgo.Var(name)
+			if error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": error.Error(),
+				})
+				fmt.Printf("error: %s", error.Error())
+				return
+			}
+			if error := c.ShouldBind(&binds); error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": error.Error(),
+				})
+				fmt.Printf("error: %s", error.Error())
+				return
+			}
+			// to array
+			switch binds.(type) {
+			case []interface{}:
+			case interface{}:
+				binds = []interface{}{binds}
+			}
+			if error := Model.Insert(binds.([]interface{})...); error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": error.Error(),
+				})
+				fmt.Printf("error: %s", error.Error())
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"message": "ok",
+			})
+			return
+		}
+	}
+}
+
+// update doc
+func update(mgo *Mongo) func(string) func(c *gin.Context) {
+	return func(name string) func(c *gin.Context) {
+		return func(c *gin.Context) {
+			Model, error := mgo.Model(name)
+			if error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": error.Error(),
+				})
+				return
+			}
+
+			var puDate PUFormat
+			if error := c.ShouldBind(&puDate); error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": error.Error(),
+				})
+				fmt.Printf("error: %s", error.Error())
+				return
+			}
+
+			bind, error := mgo.Vars(name)
+
+			if error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": error.Error(),
+				})
+				fmt.Printf("error: %s", error.Error())
+				return
+			}
+
+			jsonUpData, _ := json.Marshal(puDate.Doc)
+			json.Unmarshal(jsonUpData, &bind)
+
+			if puDate.Muti {
+				if _, error := Model.UpdateAll(puDate.Cond, &bind); error != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{
+						"message": error.Error(),
+					})
+					fmt.Printf("error: %s", error.Error())
+					return
+				}
+			} else {
+				if error := Model.Update(puDate.Cond, &bind); error != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{
+						"message": error.Error(),
+					})
+					fmt.Printf("error: %s", error.Error())
+					return
+				}
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"message": "ok",
+			})
+			return
 		}
 	}
 }

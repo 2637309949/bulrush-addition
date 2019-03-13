@@ -28,6 +28,8 @@ func New(config *bulrush.Config) *Mongo {
 	}
 	mgo.Hooks.List = list(mgo)
 	mgo.Hooks.One = one(mgo)
+	mgo.Hooks.Create = create(mgo)
+	mgo.Hooks.Update = update(mgo)
 	return mgo
 }
 
