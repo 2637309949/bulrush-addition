@@ -26,10 +26,11 @@ func New(config *bulrush.Config) *Mongo {
 		manifests: make([]interface{}, 0),
 		config:    config,
 	}
-	mgo.Hooks.List = list(mgo)
 	mgo.Hooks.One = one(mgo)
+	mgo.Hooks.List = list(mgo)
 	mgo.Hooks.Create = create(mgo)
 	mgo.Hooks.Update = update(mgo)
+	mgo.Hooks.Delete = delete(mgo)
 	return mgo
 }
 
@@ -96,7 +97,6 @@ func (mgo *Mongo) Model(name string) (*mgo.Collection, error) {
 	} else {
 		collect = name
 	}
-
 	model := mgo.Session.DB(db).C(collect)
 	return model, nil
 }

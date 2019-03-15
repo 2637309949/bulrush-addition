@@ -26,6 +26,7 @@ type Hook struct {
 	List   func(name string) func(c *gin.Context)
 	Create func(name string) func(c *gin.Context)
 	Update func(name string) func(c *gin.Context)
+	Delete func(name string) func(c *gin.Context)
 }
 
 // PUFormat Post Update Format define
@@ -217,6 +218,50 @@ func update(mgo *Mongo) func(string) func(c *gin.Context) {
 				}
 			} else {
 				if error := Model.Update(puDate.Cond, puDate.Doc); error != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{
+						"message": error.Error(),
+					})
+					fmt.Printf("error: %s", error.Error())
+					return
+				}
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"message": "ok",
+			})
+			return
+		}
+	}
+}
+
+// delete doc
+func delete(mgo *Mongo) func(string) func(c *gin.Context) {
+	return func(name string) func(c *gin.Context) {
+		return func(c *gin.Context) {
+			Model, error := mgo.Model(name)
+			if error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": error.Error(),
+				})
+				return
+			}
+			var puDate PUFormat
+			if error := c.ShouldBind(&puDate); error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": error.Error(),
+				})
+				fmt.Printf("error: %s", error.Error())
+				return
+			}
+			if puDate.Muti {
+				if _, error := Model.RemoveAll(puDate.Cond); error != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{
+						"message": error.Error(),
+					})
+					fmt.Printf("error: %s", error.Error())
+					return
+				}
+			} else {
+				if error := Model.Remove(puDate.Cond); error != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{
 						"message": error.Error(),
 					})
