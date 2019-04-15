@@ -78,6 +78,7 @@ func (j *Journal) Info(format string, a ...interface{}) {
 	})
 	if r.w != nil {
 		fmt.Fprintf(r.w, format, a...)
+		fmt.Fprint(r.w, "\n")
 	}
 }
 
@@ -94,6 +95,7 @@ func (j *Journal) Error(format string, a ...interface{}) {
 	})
 	if r.w != nil {
 		fmt.Fprintf(r.w, format, a...)
+		fmt.Fprint(r.w, "\n")
 	}
 }
 
@@ -152,7 +154,7 @@ func (j *Journal) CreateLogger(level LOGLEVEL, format FormatFunc, transports []*
 		l LOGLEVEL
 		w io.Writer
 	}{
-		l: INFOLevel,
+		l: ERRORLevel,
 		w: j.createWriter(ERRORLevel),
 	}
 	j.writers = append(j.writers, infoWriter, errorWriter)
@@ -205,7 +207,7 @@ func CreateHTTPLogger(dirPath string) *Journal {
 }
 
 // CreateConsoleLogger log to console
-func CreateConsoleLogger(dirPath string) *Journal {
+func CreateConsoleLogger() *Journal {
 	j := &Journal{}
 	j.CreateLogger(
 		INFOLevel,

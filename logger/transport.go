@@ -83,7 +83,6 @@ func (r *RotateFile) initFilePath() (string, error) {
 	if filePath != "" {
 		return filePath, nil
 	}
-	// Create level log file
 	fileName := time.Now().Format("2006.01.02")
 	fileName = fmt.Sprintf("%s.log", fileName)
 	filePath = path.Join(r.Dirname, fileName)
