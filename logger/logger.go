@@ -29,7 +29,7 @@ type (
 		Type    string
 		Dirname string
 		Level   LOGLEVEL
-		Maxsize int
+		Maxsize int64
 	}
 	// Journal logger
 	Journal struct {
@@ -111,9 +111,7 @@ func (j *Journal) createWriter(level LOGLEVEL) io.Writer {
 					}
 				}
 				if transport.Type == "File" {
-					filePath := getOrCreateFile(transport.Dirname)
-					f, _ := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0600)
-					// defer f.Close()
+					f, _ := OpenFile(transport.Dirname, transport.Maxsize, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0600)
 					if writer != nil {
 						writer = io.MultiWriter(writer, f)
 					} else {
@@ -196,7 +194,7 @@ func CreateHTTPLogger(dirPath string) *Journal {
 			&Transport{
 				Dirname: path.Join(dirPath, "http"),
 				Level:   HTTPLevel,
-				Maxsize: 1024 * 1024 * 5,
+				Maxsize: 10,
 			},
 			&Transport{
 				Level: INFOLevel,
@@ -219,13 +217,6 @@ func CreateConsoleLogger(dirPath string) *Journal {
 		},
 	)
 	return j
-}
-
-// createLog -
-func createLog(path string) io.Writer {
-	f, _ := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0600)
-	writer := io.MultiWriter(f, os.Stdout)
-	return writer
 }
 
 // getOrCreateFile get or create file
