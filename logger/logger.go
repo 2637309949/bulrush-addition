@@ -13,8 +13,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"path/filepath"
-	"time"
 
 	"github.com/thoas/go-funk"
 )
@@ -44,8 +42,8 @@ type (
 )
 
 const (
-	// STROBE file size
-	STROBE = 1024 * 1024 * 5
+	// Maxsize file size
+	Maxsize = 1024 * 1024 * 10
 )
 
 const (
@@ -171,12 +169,12 @@ func CreateLogger(dirPath string) *Journal {
 			&Transport{
 				Dirname: path.Join(dirPath, "error"),
 				Level:   ERRORLevel,
-				Maxsize: 1024 * 1024 * 5,
+				Maxsize: Maxsize,
 			},
 			&Transport{
 				Dirname: path.Join(dirPath, "combined"),
 				Level:   INFOLevel,
-				Maxsize: 1024 * 1024 * 5,
+				Maxsize: Maxsize,
 			},
 			&Transport{
 				Level: INFOLevel,
@@ -219,30 +217,4 @@ func CreateConsoleLogger() *Journal {
 		},
 	)
 	return j
-}
-
-// getOrCreateFile get or create file
-func getOrCreateFile(dirPath string) string {
-	var filePath string
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		os.Mkdir(dirPath, os.ModePerm)
-	}
-	filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
-		if filePath == "" && info.IsDir() != true {
-			fileSize := info.Size()
-			sizeMatch := fileSize < STROBE
-			if sizeMatch {
-				filePath = path
-			}
-		}
-		return nil
-	})
-	if filePath != "" {
-		return filePath
-	}
-	// create level log file
-	fileName := time.Now().Format("2006.01.02")
-	fileName = fmt.Sprintf("%s.log", fileName)
-	filePath = path.Join(dirPath, fileName)
-	return filePath
 }
