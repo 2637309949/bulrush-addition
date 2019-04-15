@@ -48,7 +48,7 @@ func (r *RotateFile) needsNewFile() (bool, error) {
 }
 
 func (r *RotateFile) newFile() error {
-	fileName := time.Now().Format("2019-01.02-03:04")
+	fileName := time.Now().Format("2006_01.02_03:04")
 	fileName = fmt.Sprintf("%s.log", fileName)
 	filePath := path.Join(r.Dirname, fileName)
 	file, error := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0600)
@@ -83,7 +83,7 @@ func (r *RotateFile) initFilePath() (string, error) {
 	if filePath != "" {
 		return filePath, nil
 	}
-	fileName := time.Now().Format("2006.01.02")
+	fileName := time.Now().Format("2006_01.02_03:04")
 	fileName = fmt.Sprintf("%s.log", fileName)
 	filePath = path.Join(r.Dirname, fileName)
 	r.fileName = fileName

@@ -194,7 +194,7 @@ func CreateHTTPLogger(dirPath string) *Journal {
 			&Transport{
 				Dirname: path.Join(dirPath, "http"),
 				Level:   HTTPLevel,
-				Maxsize: 10,
+				Maxsize: Maxsize,
 			},
 			&Transport{
 				Level: INFOLevel,
