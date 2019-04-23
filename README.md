@@ -11,7 +11,7 @@ func init() {
 
 // use cross-module references
 func AddUsers(users []interface{}) {
-	User, _ := addition.Mongo.Model("user")
+	User:= addition.Mongo.Model("user")
 	err := User.Insert(users...)
 	if err != nil {
 		panic(err)

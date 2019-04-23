@@ -41,20 +41,8 @@ func list(mgo *Mongo) func(string) func(c *gin.Context) {
 	return func(name string) func(c *gin.Context) {
 		return func(c *gin.Context) {
 			var match map[string]interface{}
-			Model, error := mgo.Model(name)
-			if error != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"message": error.Error(),
-				})
-				return
-			}
-			list, error := mgo.Vars(name)
-			if error != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"message": error.Error(),
-				})
-				return
-			}
+			Model := mgo.Model(name)
+			list := mgo.Vars(name)
 			cond := c.DefaultQuery("cond", "%7B%7D")
 			page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 			size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
@@ -105,20 +93,8 @@ func one(mgo *Mongo) func(string) func(c *gin.Context) {
 	return func(name string) func(c *gin.Context) {
 		return func(c *gin.Context) {
 			id := c.Param("id")
-			Model, error := mgo.Model(name)
-			if error != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"message": error.Error(),
-				})
-				return
-			}
-			one, error := mgo.Var(name)
-			if error != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"message": error.Error(),
-				})
-				return
-			}
+			Model := mgo.Model(name)
+			one := mgo.Var(name)
 			isOj := bson.IsObjectIdHex(id)
 			if !isOj {
 				c.JSON(http.StatusNotAcceptable, gin.H{
@@ -142,23 +118,8 @@ func one(mgo *Mongo) func(string) func(c *gin.Context) {
 func create(mgo *Mongo) func(string) func(c *gin.Context) {
 	return func(name string) func(c *gin.Context) {
 		return func(c *gin.Context) {
-			Model, error := mgo.Model(name)
-			if error != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"message": error.Error(),
-				})
-				fmt.Printf("error: %s", error.Error())
-				return
-			}
-
-			binds, error := mgo.Var(name)
-			if error != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"message": error.Error(),
-				})
-				fmt.Printf("error: %s", error.Error())
-				return
-			}
+			Model := mgo.Model(name)
+			binds := mgo.Var(name)
 			if error := c.ShouldBind(&binds); error != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"message": error.Error(),
@@ -191,14 +152,7 @@ func create(mgo *Mongo) func(string) func(c *gin.Context) {
 func update(mgo *Mongo) func(string) func(c *gin.Context) {
 	return func(name string) func(c *gin.Context) {
 		return func(c *gin.Context) {
-			Model, error := mgo.Model(name)
-			if error != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"message": error.Error(),
-				})
-				return
-			}
-
+			Model := mgo.Model(name)
 			var puDate PUFormat
 			if error := c.ShouldBind(&puDate); error != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
@@ -237,13 +191,7 @@ func update(mgo *Mongo) func(string) func(c *gin.Context) {
 func delete(mgo *Mongo) func(string) func(c *gin.Context) {
 	return func(name string) func(c *gin.Context) {
 		return func(c *gin.Context) {
-			Model, error := mgo.Model(name)
-			if error != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"message": error.Error(),
-				})
-				return
-			}
+			Model := mgo.Model(name)
 			var puDate PUFormat
 			if error := c.ShouldBind(&puDate); error != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
