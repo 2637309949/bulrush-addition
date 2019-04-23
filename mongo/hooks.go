@@ -143,7 +143,6 @@ func create(mgo *Mongo) func(string) func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"message": "ok",
 			})
-			return
 		}
 	}
 }
@@ -182,7 +181,6 @@ func update(mgo *Mongo) func(string) func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"message": "ok",
 			})
-			return
 		}
 	}
 }
@@ -220,7 +218,6 @@ func delete(mgo *Mongo) func(string) func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"message": "ok",
 			})
-			return
 		}
 	}
 }
