@@ -11,9 +11,9 @@ import (
 
 // Mongo Type Defined
 type Mongo struct {
+	config    *bulrush.Config
 	Session   *mgo.Session
 	Hooks     *Hook
-	config    *bulrush.Config
 	manifests []interface{}
 }
 
@@ -75,8 +75,6 @@ func (mgo *Mongo) Var(name string) (interface{}, error) {
 
 // Model return instance
 func (mgo *Mongo) Model(name string) (*mgo.Collection, error) {
-	var db string
-	var collect string
 	manifest := bulrush.Find(mgo.manifests, func(item interface{}) bool {
 		flag := item.(map[string]interface{})["name"].(string) == name
 		return flag
@@ -86,17 +84,8 @@ func (mgo *Mongo) Model(name string) (*mgo.Collection, error) {
 		return nil, fmt.Errorf("manifest %s not found", name)
 	}
 
-	if dbName, ok := manifest["db"]; ok && dbName.(string) != "" {
-		db = dbName.(string)
-	} else {
-		db = mgo.config.GetString("mongo.opts.database", "bulrush")
-	}
-
-	if ctName, ok := manifest["collection"]; ok && ctName.(string) != "" {
-		collect = ctName.(string)
-	} else {
-		collect = name
-	}
+	db := addition.Some(manifest["db"], mgo.config.GetString("mongo.opts.database", "bulrush")).(string)
+	collect := addition.Some(manifest["collection"], name).(string)
 	model := mgo.Session.DB(db).C(collect)
 	return model, nil
 }
