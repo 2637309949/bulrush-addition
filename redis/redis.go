@@ -22,18 +22,16 @@ type Hooks struct {
 type Redis struct {
 	Client *redis.Client
 	Hooks  *Hooks
-	config *bulrush.Config
 }
 
 // New new redis instance
-func New(config *bulrush.Config) *Redis {
-	client := obClient(config)
+func New(cfg *bulrush.Config) *Redis {
+	client := obClient(cfg)
 	rds := &Redis{
 		Client: client,
 		Hooks: &Hooks{
 			Client: client,
 		},
-		config: config,
 	}
 	return rds
 }
