@@ -12,22 +12,20 @@ import (
 	"reflect"
 )
 
-// CreateSlice create slice by variable
-func CreateSlice(target interface{}) interface{} {
-	tagetType := reflect.TypeOf(target)
-	if tagetType.Kind() == reflect.Ptr {
-		tagetType = tagetType.Elem()
+func createSlice(target interface{}) interface{} {
+	tType := reflect.ValueOf(target).Type()
+	if tType.Kind() == reflect.Ptr {
+		tType = tType.Elem()
 	}
-	targetSlice := reflect.MakeSlice(reflect.SliceOf(tagetType), 0, 0).Interface()
-	return targetSlice
+	tSlice := reflect.MakeSlice(reflect.SliceOf(tType), 0, 0).Interface()
+	return tSlice
 }
 
-// CreateObject create object by variable
-func CreateObject(target interface{}) interface{} {
-	tagetType := reflect.TypeOf(target)
-	if tagetType.Kind() == reflect.Ptr {
-		tagetType = tagetType.Elem()
+func createObject(target interface{}) interface{} {
+	tType := reflect.ValueOf(target).Type()
+	if tType.Kind() == reflect.Ptr {
+		tType = tType.Elem()
 	}
-	targetObject := reflect.New(tagetType).Interface()
-	return targetObject
+	tObject := reflect.New(tType).Interface()
+	return tObject
 }
