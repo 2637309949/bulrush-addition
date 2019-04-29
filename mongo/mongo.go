@@ -51,13 +51,12 @@ func (mgo *Mongo) Vars(name string) interface{} {
 		flag := item.(map[string]interface{})["name"].(string) == name
 		return flag
 	}).(map[string]interface{})
-
-	if manifest == nil {
-		panic(fmt.Errorf("manifest %s not found", name))
+	if manifest != nil {
+		target := addition.LeftOkV(manifest["reflector"])
+		ojt := addition.CreateSlice(target)
+		return ojt
 	}
-	target := addition.LeftOkV(manifest["reflector"])
-	vars := addition.CreateSlice(target)
-	return vars
+	panic(fmt.Errorf("manifest %s not found", name))
 }
 
 // Var return  Var
@@ -66,13 +65,12 @@ func (mgo *Mongo) Var(name string) interface{} {
 		flag := item.(map[string]interface{})["name"].(string) == name
 		return flag
 	}).(map[string]interface{})
-
-	if manifest == nil {
-		panic(fmt.Errorf("manifest %s not found", name))
+	if manifest != nil {
+		entity := addition.LeftOkV(manifest["reflector"])
+		ojt := addition.CreateObject(entity)
+		return ojt
 	}
-	target := addition.LeftOkV(manifest["reflector"])
-	obj := addition.CreateObject(target)
-	return obj
+	panic(fmt.Errorf("manifest %s not found", name))
 }
 
 // Model return instance
@@ -81,14 +79,13 @@ func (mgo *Mongo) Model(name string) *mgo.Collection {
 		flag := item.(map[string]interface{})["name"].(string) == name
 		return flag
 	}).(map[string]interface{})
-
-	if manifest == nil {
-		panic(fmt.Errorf("manifest %s not found", name))
+	if manifest != nil {
+		db := addition.Some(manifest["db"], mgo.config.GetString("mongo.opts.database", "bulrush")).(string)
+		collect := addition.Some(manifest["collection"], name).(string)
+		model := mgo.Session.DB(db).C(collect)
+		return model
 	}
-	db := addition.Some(manifest["db"], mgo.config.GetString("mongo.opts.database", "bulrush")).(string)
-	collect := addition.Some(manifest["collection"], name).(string)
-	model := mgo.Session.DB(db).C(collect)
-	return model
+	panic(fmt.Errorf("manifest %s not found", name))
 }
 
 // getMgoCfg create mgo config
