@@ -7,30 +7,27 @@ import (
 	"github.com/2637309949/bulrush"
 	addition "github.com/2637309949/bulrush-addition"
 	"github.com/globalsign/mgo"
+	"github.com/thoas/go-funk"
 )
 
 // Mongo Type Defined
 type Mongo struct {
-	config    *bulrush.Config
-	Session   *mgo.Session
-	Hooks     *Hook
-	manifests []interface{}
+	m       []map[string]interface{}
+	cfg     *bulrush.Config
+	Session *mgo.Session
+	API     *API
 }
 
 // New New mongo instance
 func New(config *bulrush.Config) *Mongo {
-	session := getSession(config)
+	sess := getSession(config)
 	mgo := &Mongo{
-		Hooks:     &Hook{},
-		Session:   session,
-		manifests: make([]interface{}, 0),
-		config:    config,
+		m:       make([]map[string]interface{}, 0),
+		cfg:     config,
+		Session: sess,
+		API:     &API{},
 	}
-	mgo.Hooks.One = one(mgo)
-	mgo.Hooks.List = list(mgo)
-	mgo.Hooks.Create = create(mgo)
-	mgo.Hooks.Update = update(mgo)
-	mgo.Hooks.Delete = delete(mgo)
+	mgo.API.mgo = mgo
 	return mgo
 }
 
@@ -42,13 +39,13 @@ func (mgo *Mongo) Register(manifest map[string]interface{}) {
 	if _, ok := manifest["reflector"]; !ok {
 		panic(errors.New("reflector params must be provided"))
 	}
-	mgo.manifests = append(mgo.manifests, manifest)
+	mgo.m = append(mgo.m, manifest)
 }
 
 // Vars return array of Var
 func (mgo *Mongo) Vars(name string) interface{} {
-	manifest := bulrush.Find(mgo.manifests, func(item interface{}) bool {
-		flag := item.(map[string]interface{})["name"].(string) == name
+	manifest := funk.Find(mgo.m, func(item map[string]interface{}) bool {
+		flag := item["name"].(string) == name
 		return flag
 	}).(map[string]interface{})
 	if manifest != nil {
@@ -61,12 +58,11 @@ func (mgo *Mongo) Vars(name string) interface{} {
 
 // Var return  Var
 func (mgo *Mongo) Var(name string) interface{} {
-	manifest := bulrush.Find(mgo.manifests, func(item interface{}) bool {
-		flag := item.(map[string]interface{})["name"].(string) == name
-		return flag
+	m := funk.Find(mgo.m, func(item map[string]interface{}) bool {
+		return item["name"].(string) == name
 	}).(map[string]interface{})
-	if manifest != nil {
-		entity := addition.LeftOkV(manifest["reflector"])
+	if m != nil {
+		entity := addition.LeftOkV(m["reflector"])
 		ojt := addition.CreateObject(entity)
 		return ojt
 	}
@@ -75,24 +71,22 @@ func (mgo *Mongo) Var(name string) interface{} {
 
 // Model return instance
 func (mgo *Mongo) Model(name string) *mgo.Collection {
-	manifest := bulrush.Find(mgo.manifests, func(item interface{}) bool {
-		flag := item.(map[string]interface{})["name"].(string) == name
+	m := funk.Find(mgo.m, func(item map[string]interface{}) bool {
+		flag := item["name"].(string) == name
 		return flag
 	}).(map[string]interface{})
-	if manifest != nil {
-		db := addition.Some(manifest["db"], mgo.config.GetString("mongo.opts.database", "bulrush")).(string)
-		collect := addition.Some(manifest["collection"], name).(string)
+	if m != nil {
+		db := addition.Some(m["db"], mgo.cfg.GetString("mongo.opts.database", "bulrush")).(string)
+		collect := addition.Some(m["collection"], name).(string)
 		model := mgo.Session.DB(db).C(collect)
 		return model
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
 
-// getMgoCfg create mgo config
-func getMgoCfg(config *bulrush.Config) *mgo.DialInfo {
-	addrs := config.GetStrList("mongo.addrs", nil)
+func dialInfo(config *bulrush.Config) *mgo.DialInfo {
 	dial := &mgo.DialInfo{}
-	dial.Addrs = addrs
+	dial.Addrs = config.GetStrList("mongo.addrs", nil)
 	dial.Timeout = config.GetDurationFromSecInt("mongo.opts.timeout", 0)
 	dial.Database = config.GetString("mongo.opts.database", "")
 	dial.ReplicaSetName = config.GetString("mongo.opts.replicaSetName", "")
@@ -114,13 +108,10 @@ func getMgoCfg(config *bulrush.Config) *mgo.DialInfo {
 	return dial
 }
 
-// getSession obtain session
 func getSession(config *bulrush.Config) *mgo.Session {
-	addrs, _ := config.List("mongo.addrs")
-	if addrs != nil && len(addrs) > 0 {
-		dial := getMgoCfg(config)
-		session := bulrush.LeftSV(mgo.DialWithInfo(dial)).(*mgo.Session)
-		return session
+	if addrs, _ := config.List("mongo.addrs"); addrs != nil && len(addrs) > 0 {
+		dial := dialInfo(config)
+		return bulrush.LeftSV(mgo.DialWithInfo(dial)).(*mgo.Session)
 	}
-	return nil
+	panic(fmt.Errorf("mongo.addrs not found"))
 }

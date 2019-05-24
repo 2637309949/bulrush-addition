@@ -27,28 +27,26 @@ type Redis struct {
 // New new redis instance
 func New(cfg *bulrush.Config) *Redis {
 	client := obClient(cfg)
-	rds := &Redis{
+	hooks := &Hooks{
 		Client: client,
-		Hooks: &Hooks{
-			Client: client,
-		},
 	}
-	return rds
+	return &Redis{
+		Client: client,
+		Hooks:  hooks,
+	}
 }
 
 // obClient obtain a redis connecting
 func obClient(config *bulrush.Config) *redis.Client {
 	addrs := config.GetString("redis.addrs", "")
-	if addrs != "" {
-		options := &redis.Options{}
-		options.Addr = addrs
-		options.Password = config.GetString("redis.opts.password", "")
-		options.DB = config.GetInt("redis.opts.db", 0)
-		client := redis.NewClient(options)
-		if _, err := client.Ping().Result(); err != nil {
-			panic(err)
-		}
-		return client
+	options := &redis.Options{}
+	options.Addr = addrs
+	options.Password = config.GetString("redis.opts.password", "")
+	options.DB = config.GetInt("redis.opts.db", 0)
+	client := redis.NewClient(options)
+	_, err := client.Ping().Result()
+	if err != nil {
+		panic(err)
 	}
-	return nil
+	return client
 }

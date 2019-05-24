@@ -1,23 +1,61 @@
 # bulrush-addition
 Provides cross-module references.  
-- EXAMPLE:   
-```go
-// create cross-module references
-func init() {
-	WC = bulrush.NewCfg(CONFIGPATH)
-	Mongo = mongo.New(WC)
-	Redis = redis.New(WC)
-}
 
-// use cross-module references
+### logger
+```
+var Logger = logger.CreateLogger(path.Join(".", utils.Some(utils.LeftV(conf.Cfg.String("logs")), "logs").(string)))
+Logger.Info("from bulrushApp %s", "info")
+Logger.Error("from bulrushApp %s", "error")
+```
+### mongo
+```go
+var Mongo = mongo.New(conf.Cfg)
 func AddUsers(users []interface{}) {
-	User:= addition.Mongo.Model("user")
+	User:= Mongo.Model("user")
 	err := User.Insert(users...)
 	if err != nil {
 		panic(err)
 	}
 }
+
+// RegisterUser genrate user routers
+func RegisterUser(r *gin.RouterGroup) {
+	Mongo.API.List(r, "user").Pre(func(c *gin.Context) {
+		fmt.Println("before")
+	}).Post(func(c *gin.Context) {
+		fmt.Println("after")
+	})
+	Mongo.API.One(r, "user")
+	Mongo.API.Create(r, "user")
+	Mongo.API.Update(r, "user")
+	Mongo.API.Delete(r, "user")
+}
 ```
+### redis
+```go
+var Redis = redis.New(conf.Cfg)
+app.Use(&limit.Limit{
+	Frequency: &limit.Frequency{
+		Passages: []string{},
+		Rules: []limit.Rule{
+			limit.Rule{
+				Methods: []string{"GET"},
+				Match:   "/api/v1/user*",
+				Rate:    1,
+			},
+			limit.Rule{
+				Methods: []string{"GET"},
+				Match:   "/api/v1/role*",
+				Rate:    2,
+			},
+		},
+		Model: &limit.RedisModel{
+			Redis: addition.Redis,
+		},
+	},
+})
+```
+
 ## MIT License
 
 Copyright (c) 2018-2020 Double
