@@ -6,16 +6,18 @@ import (
 
 	"github.com/2637309949/bulrush"
 	addition "github.com/2637309949/bulrush-addition"
+	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo"
 	"github.com/thoas/go-funk"
 )
 
 // Mongo Type Defined
 type Mongo struct {
-	m       []map[string]interface{}
-	cfg     *bulrush.Config
-	Session *mgo.Session
-	API     *API
+	m        []map[string]interface{}
+	cfg      *bulrush.Config
+	Session  *mgo.Session
+	API      *API
+	AutoHook bulrush.PNBase
 }
 
 // New New mongo instance
@@ -28,6 +30,7 @@ func New(config *bulrush.Config) *Mongo {
 		API:     &API{},
 	}
 	mgo.API.mgo = mgo
+	mgo.AutoHook = autoHook(mgo)
 	return mgo
 }
 
@@ -82,6 +85,22 @@ func (mgo *Mongo) Model(name string) *mgo.Collection {
 		return model
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
+}
+
+// autoHook Automatic routing
+func autoHook(mgo *Mongo) bulrush.PNBase {
+	return bulrush.PNQuick(func(r *gin.RouterGroup) {
+		funk.ForEach(mgo.m, func(item map[string]interface{}) {
+			if autoHook, exists := item["autoHook"]; exists == false || autoHook == true {
+				name := item["name"].(string)
+				mgo.API.List(r, name)
+				mgo.API.One(r, name)
+				mgo.API.Create(r, name)
+				mgo.API.Update(r, name)
+				mgo.API.Delete(r, name)
+			}
+		})
+	})
 }
 
 func dialInfo(config *bulrush.Config) *mgo.DialInfo {

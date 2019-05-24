@@ -26,7 +26,7 @@ type Redis struct {
 
 // New new redis instance
 func New(cfg *bulrush.Config) *Redis {
-	client := obClient(cfg)
+	client := createClient(cfg)
 	hooks := &Hooks{
 		Client: client,
 	}
@@ -36,8 +36,8 @@ func New(cfg *bulrush.Config) *Redis {
 	}
 }
 
-// obClient obtain a redis connecting
-func obClient(config *bulrush.Config) *redis.Client {
+// createClient obtain a redis connecting
+func createClient(config *bulrush.Config) *redis.Client {
 	addrs := config.GetString("redis.addrs", "")
 	options := &redis.Options{}
 	options.Addr = addrs
