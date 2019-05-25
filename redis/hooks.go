@@ -16,20 +16,22 @@ import (
 )
 
 // SetJSON store json data
-func (hooks *Hooks) SetJSON(key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
-	if value, err := json.Marshal(value); err == nil {
-		ret := hooks.Client.Set(key, value, expiration)
-		return ret
+func (hooks *Hooks) SetJSON(key string, value interface{}, expiration time.Duration) (*redis.StatusCmd, error) {
+	value, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	ret := hooks.Client.Set(key, value, expiration)
+	return ret, nil
 }
 
 // GetJSON get json data
-func (hooks *Hooks) GetJSON(key string) map[string]interface{} {
+func (hooks *Hooks) GetJSON(key string) (map[string]interface{}, error) {
 	var imapGet map[string]interface{}
-	if value, err := hooks.Client.Get(key).Result(); err == nil {
-		json.Unmarshal([]byte(value), &imapGet)
-		return imapGet
+	value, err := hooks.Client.Get(key).Result()
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	json.Unmarshal([]byte(value), &imapGet)
+	return imapGet, nil
 }

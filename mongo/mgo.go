@@ -16,18 +16,19 @@ type Mongo struct {
 	m        []map[string]interface{}
 	cfg      *bulrush.Config
 	Session  *mgo.Session
-	API      *API
+	API      *api
 	AutoHook bulrush.PNBase
 }
 
 // New New mongo instance
+// Export Session, API and AutoHook
 func New(config *bulrush.Config) *Mongo {
-	sess := getSession(config)
+	session := createSession(config)
 	mgo := &Mongo{
 		m:       make([]map[string]interface{}, 0),
 		cfg:     config,
-		Session: sess,
-		API:     &API{},
+		Session: session,
+		API:     &api{},
 	}
 	mgo.API.mgo = mgo
 	mgo.AutoHook = autoHook(mgo)
@@ -35,6 +36,7 @@ func New(config *bulrush.Config) *Mongo {
 }
 
 // Register model
+// should provide name and reflector paramters
 func (mgo *Mongo) Register(manifest map[string]interface{}) {
 	if _, ok := manifest["name"]; !ok {
 		panic(errors.New("name params must be provided"))
@@ -47,42 +49,38 @@ func (mgo *Mongo) Register(manifest map[string]interface{}) {
 
 // Vars return array of Var
 func (mgo *Mongo) Vars(name string) interface{} {
-	manifest := funk.Find(mgo.m, func(item map[string]interface{}) bool {
+	statement := funk.Find(mgo.m, func(item map[string]interface{}) bool {
 		flag := item["name"].(string) == name
 		return flag
 	}).(map[string]interface{})
-	if manifest != nil {
-		target := addition.LeftOkV(manifest["reflector"])
-		ojt := addition.CreateSlice(target)
-		return ojt
+	if statement != nil {
+		return addition.CreateSlice(addition.LeftOkV(statement["reflector"]))
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
 
 // Var return  Var
+// reflect from reflector entity
 func (mgo *Mongo) Var(name string) interface{} {
-	m := funk.Find(mgo.m, func(item map[string]interface{}) bool {
+	statement := funk.Find(mgo.m, func(item map[string]interface{}) bool {
 		return item["name"].(string) == name
 	}).(map[string]interface{})
-	if m != nil {
-		entity := addition.LeftOkV(m["reflector"])
-		ojt := addition.CreateObject(entity)
-		return ojt
+	if statement != nil {
+		return addition.CreateObject(addition.LeftOkV(statement["reflector"]))
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
 
 // Model return instance
+// throw error if not exists these model
 func (mgo *Mongo) Model(name string) *mgo.Collection {
-	m := funk.Find(mgo.m, func(item map[string]interface{}) bool {
-		flag := item["name"].(string) == name
-		return flag
+	statement := funk.Find(mgo.m, func(item map[string]interface{}) bool {
+		return item["name"].(string) == name
 	}).(map[string]interface{})
-	if m != nil {
-		db := addition.Some(m["db"], mgo.cfg.GetString("mongo.opts.database", "bulrush")).(string)
-		collect := addition.Some(m["collection"], name).(string)
-		model := mgo.Session.DB(db).C(collect)
-		return model
+	if statement != nil {
+		db := addition.Some(statement["db"], mgo.cfg.GetString("mongo.opts.database", "bulrush")).(string)
+		collect := addition.Some(statement["collection"], name).(string)
+		return mgo.Session.DB(db).C(collect)
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
@@ -92,17 +90,14 @@ func autoHook(mgo *Mongo) bulrush.PNBase {
 	return bulrush.PNQuick(func(r *gin.RouterGroup) {
 		funk.ForEach(mgo.m, func(item map[string]interface{}) {
 			if autoHook, exists := item["autoHook"]; exists == false || autoHook == true {
-				name := item["name"].(string)
-				mgo.API.List(r, name)
-				mgo.API.One(r, name)
-				mgo.API.Create(r, name)
-				mgo.API.Update(r, name)
-				mgo.API.Delete(r, name)
+				collection := item["name"].(string)
+				mgo.API.ALL(r, collection)
 			}
 		})
 	})
 }
 
+// dialInfo with default params
 func dialInfo(config *bulrush.Config) *mgo.DialInfo {
 	dial := &mgo.DialInfo{}
 	dial.Addrs = config.GetStrList("mongo.addrs", nil)
@@ -127,10 +122,12 @@ func dialInfo(config *bulrush.Config) *mgo.DialInfo {
 	return dial
 }
 
-func getSession(config *bulrush.Config) *mgo.Session {
-	if addrs, _ := config.List("mongo.addrs"); addrs != nil && len(addrs) > 0 {
-		dial := dialInfo(config)
-		return bulrush.LeftSV(mgo.DialWithInfo(dial)).(*mgo.Session)
+// obtain mongo connect session
+func createSession(config *bulrush.Config) *mgo.Session {
+	dial := dialInfo(config)
+	session, err := mgo.DialWithInfo(dial)
+	if err != nil {
+		panic(err)
 	}
-	panic(fmt.Errorf("mongo.addrs not found"))
+	return session
 }

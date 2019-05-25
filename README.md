@@ -17,7 +17,6 @@ func AddUsers(users []interface{}) {
 		panic(err)
 	}
 }
-
 // RegisterUser genrate user routers
 func RegisterUser(r *gin.RouterGroup) {
 	Mongo.API.List(r, "user").Pre(func(c *gin.Context) {
@@ -30,6 +29,9 @@ func RegisterUser(r *gin.RouterGroup) {
 	Mongo.API.Update(r, "user")
 	Mongo.API.Delete(r, "user")
 }
+app.Use(Model, Route)
+// Open model autoHook
+app.Use(addition.Mongo.AutoHook)
 ```
 ### redis
 ```go

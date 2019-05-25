@@ -36,17 +36,27 @@ func New(cfg *bulrush.Config) *Redis {
 	}
 }
 
-// createClient obtain a redis connecting
-func createClient(config *bulrush.Config) *redis.Client {
+// dialInfo with default params
+func dialInfo(config *bulrush.Config) *redis.Options {
 	addrs := config.GetString("redis.addrs", "")
 	options := &redis.Options{}
 	options.Addr = addrs
 	options.Password = config.GetString("redis.opts.password", "")
 	options.DB = config.GetInt("redis.opts.db", 0)
-	client := redis.NewClient(options)
-	_, err := client.Ping().Result()
-	if err != nil {
+	return options
+}
+
+// ping client
+func ping(c *redis.Client) {
+	if _, err := c.Ping().Result(); err != nil {
 		panic(err)
 	}
+}
+
+// createClient obtain a redis connecting
+func createClient(config *bulrush.Config) *redis.Client {
+	options := dialInfo(config)
+	client := redis.NewClient(options)
+	ping(client)
 	return client
 }

@@ -16,13 +16,13 @@ import (
 
 type (
 	// API type defined
-	API struct {
+	api struct {
 		mgo *Mongo
 	}
 )
 
 // One hook auto generate api
-func (api *API) One(r *gin.RouterGroup, name string) *Hook {
+func (api *api) One(r *gin.RouterGroup, name string) *Hook {
 	handler := func(c *gin.Context) {
 		one(name, api.mgo, c)
 	}
@@ -32,7 +32,7 @@ func (api *API) One(r *gin.RouterGroup, name string) *Hook {
 }
 
 // List hook auto generate api
-func (api *API) List(r *gin.RouterGroup, name string) *Hook {
+func (api *api) List(r *gin.RouterGroup, name string) *Hook {
 	handler := func(c *gin.Context) {
 		list(name, api.mgo, c)
 	}
@@ -42,7 +42,7 @@ func (api *API) List(r *gin.RouterGroup, name string) *Hook {
 }
 
 // Create hook auto generate api
-func (api *API) Create(r *gin.RouterGroup, name string) *Hook {
+func (api *api) Create(r *gin.RouterGroup, name string) *Hook {
 	handler := func(c *gin.Context) {
 		create(name, api.mgo, c)
 	}
@@ -52,7 +52,7 @@ func (api *API) Create(r *gin.RouterGroup, name string) *Hook {
 }
 
 // Update hook auto generate api
-func (api *API) Update(r *gin.RouterGroup, name string) *Hook {
+func (api *api) Update(r *gin.RouterGroup, name string) *Hook {
 	handler := func(c *gin.Context) {
 		update(name, api.mgo, c)
 	}
@@ -62,7 +62,7 @@ func (api *API) Update(r *gin.RouterGroup, name string) *Hook {
 }
 
 // Delete hook auto generate api
-func (api *API) Delete(r *gin.RouterGroup, name string) *Hook {
+func (api *api) Delete(r *gin.RouterGroup, name string) *Hook {
 	handler := func(c *gin.Context) {
 		delete(name, api.mgo, c)
 	}
@@ -72,7 +72,7 @@ func (api *API) Delete(r *gin.RouterGroup, name string) *Hook {
 }
 
 // ALL hook auto generate api
-func (api *API) ALL(r *gin.RouterGroup, name string) {
+func (api *api) ALL(r *gin.RouterGroup, name string) {
 	r.GET(fmt.Sprintf("/%s", name), func(c *gin.Context) {
 		list(name, api.mgo, c)
 	})

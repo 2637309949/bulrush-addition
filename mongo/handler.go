@@ -10,7 +10,6 @@ package mongo
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
 	"net/http"
 	"net/url"
@@ -20,8 +19,7 @@ import (
 	"github.com/globalsign/mgo/bson"
 )
 
-// PUFormat Post Update Format define
-type PUFormat struct {
+type puFormat struct {
 	Cond map[string]interface{} `bson:"cond" form:"cond" json:"cond" xml:"cond"`
 	Muti bool                   `bson:"muti" form:"muti" json:"muti" xml:"muti"`
 	Doc  interface{}            `bson:"doc" form:"doc" json:"doc" xml:"doc" `
@@ -33,16 +31,12 @@ func one(name string, mgo *Mongo, c *gin.Context) {
 	one := mgo.Var(name)
 	isOj := bson.IsObjectIdHex(id)
 	if !isOj {
-		c.JSON(http.StatusNotAcceptable, gin.H{
-			"message": "not a valid id",
-		})
+		c.JSON(http.StatusNotAcceptable, gin.H{"message": "not a valid id"})
 		return
 	}
 	err := Model.FindId(bson.ObjectIdHex(id)).One(one)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, one)
@@ -58,19 +52,14 @@ func list(name string, mgo *Mongo, c *gin.Context) {
 	_range := c.DefaultQuery("range", "PAGE")
 	unescapeCond, err := url.QueryUnescape(cond)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 	err = json.Unmarshal([]byte(unescapeCond), &match)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	// return mapping body， not json in db
 	query := Model.Find(match)
 	totalrecords, _ := query.Count()
 	if _range != "ALL" {
@@ -79,9 +68,7 @@ func list(name string, mgo *Mongo, c *gin.Context) {
 	err = query.All(&list)
 	totalpages := math.Ceil(float64(totalrecords) / float64(size))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -99,10 +86,7 @@ func create(name string, mgo *Mongo, c *gin.Context) {
 	Model := mgo.Model(name)
 	binds := mgo.Var(name)
 	if error := c.ShouldBind(&binds); error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": error.Error(),
-		})
-		fmt.Printf("error: %s", error.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"message": error.Error()})
 		return
 	}
 	switch binds.(type) {
@@ -111,10 +95,7 @@ func create(name string, mgo *Mongo, c *gin.Context) {
 		binds = []interface{}{binds}
 	}
 	if error := Model.Insert(binds.([]interface{})...); error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": error.Error(),
-		})
-		fmt.Printf("error: %s", error.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"message": error.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -124,28 +105,19 @@ func create(name string, mgo *Mongo, c *gin.Context) {
 
 func delete(name string, mgo *Mongo, c *gin.Context) {
 	Model := mgo.Model(name)
-	var puDate PUFormat
+	var puDate puFormat
 	if error := c.ShouldBind(&puDate); error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": error.Error(),
-		})
-		fmt.Printf("error: %s", error.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"message": error.Error()})
 		return
 	}
 	if puDate.Muti {
 		if _, error := Model.RemoveAll(puDate.Cond); error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": error.Error(),
-			})
-			fmt.Printf("error: %s", error.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{"message": error.Error()})
 			return
 		}
 	} else {
 		if error := Model.Remove(puDate.Cond); error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": error.Error(),
-			})
-			fmt.Printf("error: %s", error.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{"message": error.Error()})
 			return
 		}
 	}
@@ -156,33 +128,22 @@ func delete(name string, mgo *Mongo, c *gin.Context) {
 
 func update(name string, mgo *Mongo, c *gin.Context) {
 	Model := mgo.Model(name)
-	var puDate PUFormat
+	var puDate puFormat
 	if error := c.ShouldBind(&puDate); error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": error.Error(),
-		})
-		fmt.Printf("error: %s", error.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"message": error.Error()})
 		return
 	}
 
 	if puDate.Muti {
 		if _, error := Model.UpdateAll(puDate.Cond, puDate.Doc); error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": error.Error(),
-			})
-			fmt.Printf("error: %s", error.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{"message": error.Error()})
 			return
 		}
 	} else {
 		if error := Model.Update(puDate.Cond, puDate.Doc); error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": error.Error(),
-			})
-			fmt.Printf("error: %s", error.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{"message": error.Error()})
 			return
 		}
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"message": "ok",
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "ok"})
 }
