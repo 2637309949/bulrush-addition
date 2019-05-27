@@ -6,7 +6,7 @@
  * @desc [description]
  */
 
-package mongo
+package mgo
 
 import (
 	"github.com/gin-gonic/gin"
