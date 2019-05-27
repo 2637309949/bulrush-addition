@@ -15,20 +15,25 @@ import (
 	"github.com/go-redis/redis"
 )
 
+// API -
+type API struct {
+	Client *redis.Client
+}
+
 // SetJSON store json data
-func (hooks *Hooks) SetJSON(key string, value interface{}, expiration time.Duration) (*redis.StatusCmd, error) {
+func (h *API) SetJSON(key string, value interface{}, expiration time.Duration) (*redis.StatusCmd, error) {
 	value, err := json.Marshal(value)
 	if err != nil {
 		return nil, err
 	}
-	ret := hooks.Client.Set(key, value, expiration)
+	ret := h.Client.Set(key, value, expiration)
 	return ret, nil
 }
 
 // GetJSON get json data
-func (hooks *Hooks) GetJSON(key string) (map[string]interface{}, error) {
+func (h *API) GetJSON(key string) (map[string]interface{}, error) {
 	var imapGet map[string]interface{}
-	value, err := hooks.Client.Get(key).Result()
+	value, err := h.Client.Get(key).Result()
 	if err != nil {
 		return nil, err
 	}

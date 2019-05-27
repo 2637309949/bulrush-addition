@@ -13,26 +13,21 @@ import (
 	"github.com/go-redis/redis"
 )
 
-// Hooks -
-type Hooks struct {
-	Client *redis.Client
-}
-
 // Redis some common function
 type Redis struct {
 	Client *redis.Client
-	Hooks  *Hooks
+	API    *API
 }
 
 // New new redis instance
 func New(cfg *bulrush.Config) *Redis {
 	client := createClient(cfg)
-	hooks := &Hooks{
+	api := &API{
 		Client: client,
 	}
 	return &Redis{
 		Client: client,
-		Hooks:  hooks,
+		API:    api,
 	}
 }
 
