@@ -7,3 +7,6 @@
  */
 
 package gorm
+
+type GORM struct {
+}
