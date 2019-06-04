@@ -78,7 +78,7 @@ func (mgo *Mongo) Model(name string) *mgo.Collection {
 		return item["name"].(string) == name
 	}).(map[string]interface{})
 	if statement != nil {
-		db := addition.Some(statement["db"], mgo.cfg.GetString("mongo.opts.database", "bulrush")).(string)
+		db := addition.Some(statement["db"], mgo.cfg.Mongo.Database).(string)
 		collect := addition.Some(statement["collection"], name).(string)
 		return mgo.Session.DB(db).C(collect)
 	}
@@ -100,31 +100,31 @@ func autoHook(mgo *Mongo) bulrush.PNBase {
 // dialInfo with default params
 func dialInfo(config *bulrush.Config) *mgo.DialInfo {
 	dial := &mgo.DialInfo{}
-	dial.Addrs = config.GetStrList("mongo.addrs", nil)
-	dial.Timeout = config.GetDurationFromSecInt("mongo.opts.timeout", 0)
-	dial.Database = config.GetString("mongo.opts.database", "")
-	dial.ReplicaSetName = config.GetString("mongo.opts.replicaSetName", "")
-	dial.Source = config.GetString("mongo.opts.source", "")
-	dial.Service = config.GetString("mongo.opts.service", "")
-	dial.ServiceHost = config.GetString("mongo.opts.serviceHost", "")
-	dial.Mechanism = config.GetString("mongo.opts.mechanism", "")
-	dial.Username = config.GetString("mongo.opts.username", "")
-	dial.Password = config.GetString("mongo.opts.password", "")
-	dial.PoolLimit = config.GetInt("mongo.opts.poolLimit", 0)
-	dial.PoolTimeout = config.GetDurationFromSecInt("mongo.opts.poolTimeout", 0)
-	dial.ReadTimeout = config.GetDurationFromSecInt("mongo.opts.readTimeout", 0)
-	dial.WriteTimeout = config.GetDurationFromSecInt("mongo.opts.writeTimeout", 0)
-	dial.AppName = config.GetString("mongo.opts.appName", "")
-	dial.FailFast = config.GetBool("mongo.opts.failFast", false)
-	dial.Direct = config.GetBool("mongo.opts.direct", false)
-	dial.MinPoolSize = config.GetInt("mongo.opts.minPoolSize", 0)
-	dial.MaxIdleTimeMS = config.GetInt("mongo.opts.maxIdleTimeMS", 0)
+	dial.Addrs = config.Mongo.Addrs
+	dial.Timeout = config.Mongo.Timeout
+	dial.Database = config.Mongo.Database
+	dial.ReplicaSetName = config.Mongo.ReplicaSetName
+	dial.Source = config.Mongo.Source
+	dial.Service = config.Mongo.Service
+	dial.ServiceHost = config.Mongo.ServiceHost
+	dial.Mechanism = config.Mongo.Mechanism
+	dial.Username = config.Mongo.Username
+	dial.Password = config.Mongo.Password
+	dial.PoolLimit = config.Mongo.PoolLimit
+	dial.PoolTimeout = config.Mongo.PoolTimeout
+	dial.ReadTimeout = config.Mongo.ReadTimeout
+	dial.WriteTimeout = config.Mongo.WriteTimeout
+	dial.AppName = config.Mongo.AppName
+	dial.FailFast = config.Mongo.FailFast
+	dial.Direct = config.Mongo.Direct
+	dial.MinPoolSize = config.Mongo.MinPoolSize
+	dial.MaxIdleTimeMS = config.Mongo.MaxIdleTimeMS
 	return dial
 }
 
 // obtain mongo connect session
-func createSession(config *bulrush.Config) *mgo.Session {
-	dial := dialInfo(config)
+func createSession(cfg *bulrush.Config) *mgo.Session {
+	dial := dialInfo(cfg)
 	session, err := mgo.DialWithInfo(dial)
 	if err != nil {
 		panic(err)

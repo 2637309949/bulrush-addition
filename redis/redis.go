@@ -34,9 +34,9 @@ func New(cfg *bulrush.Config) *Redis {
 // dialInfo with default params
 func dialInfo(config *bulrush.Config) *redis.Options {
 	options := &redis.Options{}
-	options.Addr = config.GetString("redis.addrs", "")
-	options.Password = config.GetString("redis.opts.password", "")
-	options.DB = config.GetInt("redis.opts.db", 0)
+	options.Addr = config.Redis.Addr
+	options.Password = config.Redis.Password
+	options.DB = config.Redis.DB
 	return options
 }
 
