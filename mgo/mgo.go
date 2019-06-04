@@ -125,6 +125,8 @@ func dialInfo(config *bulrush.Config) *mgo.DialInfo {
 // obtain mongo connect session
 func createSession(cfg *bulrush.Config) *mgo.Session {
 	dial := dialInfo(cfg)
+	fmt.Print(dial)
+
 	session, err := mgo.DialWithInfo(dial)
 	if err != nil {
 		panic(err)
