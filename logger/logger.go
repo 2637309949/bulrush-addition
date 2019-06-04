@@ -124,8 +124,8 @@ func (j *Journal) createWriter(level LOGLEVEL) io.Writer {
 	return writer
 }
 
-// CreateLogger logger
-func (j *Journal) CreateLogger(level LOGLEVEL, format FormatFunc, transports []*Transport) *Journal {
+// createLogger logger
+func (j *Journal) createLogger(level LOGLEVEL, format FormatFunc, transports []*Transport) *Journal {
 	for _, transport := range transports {
 		if transport.Level == 0 {
 			transport.Level = INFOLevel
@@ -162,7 +162,7 @@ func (j *Journal) CreateLogger(level LOGLEVEL, format FormatFunc, transports []*
 // CreateLogger log to console and file
 func CreateLogger(dirPath string) *Journal {
 	j := &Journal{}
-	j.CreateLogger(
+	j.createLogger(
 		INFOLevel,
 		nil,
 		[]*Transport{
@@ -187,7 +187,7 @@ func CreateLogger(dirPath string) *Journal {
 // CreateHTTPLogger log to console and file
 func CreateHTTPLogger(dirPath string) *Journal {
 	j := &Journal{}
-	j.CreateLogger(
+	j.createLogger(
 		INFOLevel,
 		nil,
 		[]*Transport{
@@ -207,7 +207,7 @@ func CreateHTTPLogger(dirPath string) *Journal {
 // CreateConsoleLogger log to console
 func CreateConsoleLogger() *Journal {
 	j := &Journal{}
-	j.CreateLogger(
+	j.createLogger(
 		INFOLevel,
 		nil,
 		[]*Transport{
