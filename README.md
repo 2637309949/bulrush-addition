@@ -3,9 +3,28 @@ Provides cross-module references.
 
 ### logger
 ```
-var Logger = logger.CreateLogger(path.Join(".", utils.Some(utils.LeftV(conf.Cfg.String("logs")), "logs").(string)))
-Logger.Info("from bulrushApp %s", "info")
-Logger.Error("from bulrushApp %s", "error")
+var Logger = logger.CreateLogger(
+	logger.INFOLevel,
+	nil,
+	[]*logger.Transport{
+		// only for error
+		&logger.Transport{
+			Dirname: path.Join(path.Join(".", utils.Some(conf.Cfg.Log.Path, "logs").(string)), "error"),
+			Level:   logger.ERRORLevel,
+			Maxsize: logger.Maxsize,
+		},
+		// combined all level
+		&logger.Transport{
+			Dirname: path.Join(path.Join(".", utils.Some(conf.Cfg.Log.Path, "logs").(string)), "combined"),
+			Level:   logger.INFOLevel,
+			Maxsize: logger.Maxsize,
+		},
+		// console level
+		&logger.Transport{
+			Level: logger.INFOLevel,
+		},
+	},
+)
 ```
 ### mongo
 ```go
