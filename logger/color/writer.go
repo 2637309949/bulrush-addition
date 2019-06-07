@@ -10,8 +10,6 @@ package color
 
 import (
 	"io"
-
-	"github.com/beego/bee/logger/colors"
 )
 
 type (
@@ -44,19 +42,19 @@ const (
 func (c *Writer) getColorString(message string) string {
 	switch c.Level {
 	case ERRORLevel:
-		return colors.RedBold(message)
+		return RedBold(message)
 	case WARNLevel:
-		return colors.YellowBold(message)
+		return YellowBold(message)
 	case INFOLevel:
-		return colors.WhiteBold(message)
+		return WhiteBold(message)
 	case VERBOSELevel:
-		return colors.YellowBold(message)
+		return YellowBold(message)
 	case DEBUGLevel:
-		return colors.BlueBold(message)
+		return BlueBold(message)
 	case SILLYLevel:
-		return colors.Cyan(message)
+		return Cyan(message)
 	case HTTPLevel:
-		return colors.GreenBold(message)
+		return GreenBold(message)
 	default:
 		return message
 	}
