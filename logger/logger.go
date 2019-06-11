@@ -45,19 +45,19 @@ const (
 	// Maxsize file size
 	Maxsize = 1024 * 1024 * 10
 	// ERRORLevel level
-	ERRORLevel LOGLEVEL = iota + 1
+	ERRORLevel LOGLEVEL = 1
 	// WARNLevel level
-	WARNLevel
+	WARNLevel LOGLEVEL = 2
 	// INFOLevel level
-	INFOLevel
+	INFOLevel LOGLEVEL = 3
 	// VERBOSELevel level
-	VERBOSELevel
+	VERBOSELevel LOGLEVEL = 4
 	// DEBUGLevel level
-	DEBUGLevel
+	DEBUGLevel LOGLEVEL = 5
 	// SILLYLevel level
-	SILLYLevel
+	SILLYLevel LOGLEVEL = 6
 	// HTTPLevel level
-	HTTPLevel
+	HTTPLevel LOGLEVEL = 7
 )
 
 // Error level
@@ -181,7 +181,6 @@ func (j *Journal) HTTP(format string, a ...interface{}) {
 
 func (j *Journal) fprintf(w *LevelWriter, format string, a ...interface{}) {
 	fmt.Fprintf(w, format, a...)
-	fmt.Fprintln(w, "")
 }
 
 // create writer

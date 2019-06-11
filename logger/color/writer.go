@@ -9,6 +9,7 @@
 package color
 
 import (
+	"fmt"
 	"io"
 )
 
@@ -24,44 +25,65 @@ type (
 
 const (
 	// ERRORLevel level
-	ERRORLevel LOGLEVEL = iota + 2
+	ERRORLevel LOGLEVEL = 1
 	// WARNLevel level
-	WARNLevel
+	WARNLevel LOGLEVEL = 2
 	// INFOLevel level
-	INFOLevel
+	INFOLevel LOGLEVEL = 3
 	// VERBOSELevel level
-	VERBOSELevel
+	VERBOSELevel LOGLEVEL = 4
 	// DEBUGLevel level
-	DEBUGLevel
+	DEBUGLevel LOGLEVEL = 5
 	// SILLYLevel level
-	SILLYLevel
+	SILLYLevel LOGLEVEL = 6
 	// HTTPLevel level
-	HTTPLevel
+	HTTPLevel LOGLEVEL = 7
 )
 
-func (c *Writer) getColorString(message string) string {
+func getLevelTag(level LOGLEVEL) string {
+	switch level {
+	case ERRORLevel:
+		return "ERROR"
+	case WARNLevel:
+		return "WARN"
+	case INFOLevel:
+		return "INFO"
+	case VERBOSELevel:
+		return "VERBOSE"
+	case DEBUGLevel:
+		return "DEBUG"
+	case SILLYLevel:
+		return "SILLY"
+	case HTTPLevel:
+		return "HTTP"
+	}
+	return string(level)
+}
+
+func (c *Writer) getColorString(text string) string {
 	switch c.Level {
 	case ERRORLevel:
-		return RedBold(message)
+		return Red(text)
 	case WARNLevel:
-		return YellowBold(message)
+		return Yellow(text)
 	case INFOLevel:
-		return WhiteBold(message)
+		return White(text)
 	case VERBOSELevel:
-		return YellowBold(message)
+		return Yellow(text)
 	case DEBUGLevel:
-		return BlueBold(message)
+		return Blue(text)
 	case SILLYLevel:
-		return Cyan(message)
+		return Cyan(text)
 	case HTTPLevel:
-		return GreenBold(message)
+		return Green(text)
 	default:
-		return message
+		return text
 	}
 }
 
 func (c *Writer) Write(p []byte) (int, error) {
-	pstring := c.getColorString(string(p))
-	pbyte := []byte(pstring)
+	levelTag := getLevelTag(c.Level)
+	levelTagColor := c.getColorString(levelTag)
+	pbyte := []byte(fmt.Sprintf("%s %s \n", levelTagColor, string(p)))
 	return c.W.Write(pbyte)
 }
