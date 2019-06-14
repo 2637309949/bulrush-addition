@@ -18,52 +18,57 @@ type (
 )
 
 // One hook auto generate api
-func (api *api) One(r *gin.RouterGroup, name string) *Hook {
+func (api *api) One(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
 	handler := func(c *gin.Context) {
 		one(name, api.mgo, c)
 	}
 	h := createHooks(api.mgo, handler)
-	r.GET(fmt.Sprintf("/%s/:id", name), h.R)
+	handlers = append(handlers, h.R)
+	r.GET(fmt.Sprintf("/%s/:id", name), handlers...)
 	return h
 }
 
 // List hook auto generate api
-func (api *api) List(r *gin.RouterGroup, name string) *Hook {
+func (api *api) List(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
 	handler := func(c *gin.Context) {
 		list(name, api.mgo, c)
 	}
 	h := createHooks(api.mgo, handler)
-	r.GET(fmt.Sprintf("/%s", name), h.R)
+	handlers = append(handlers, h.R)
+	r.GET(fmt.Sprintf("/%s", name), handlers...)
 	return h
 }
 
 // Create hook auto generate api
-func (api *api) Create(r *gin.RouterGroup, name string) *Hook {
+func (api *api) Create(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
 	handler := func(c *gin.Context) {
 		create(name, api.mgo, c)
 	}
 	h := createHooks(api.mgo, handler)
-	r.POST(fmt.Sprintf("/%s", name), h.R)
+	handlers = append(handlers, h.R)
+	r.POST(fmt.Sprintf("/%s", name), handlers...)
 	return h
 }
 
 // Update hook auto generate api
-func (api *api) Update(r *gin.RouterGroup, name string) *Hook {
+func (api *api) Update(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
 	handler := func(c *gin.Context) {
 		update(name, api.mgo, c)
 	}
 	h := createHooks(api.mgo, handler)
-	r.PUT(fmt.Sprintf("/%s", name), h.R)
+	handlers = append(handlers, h.R)
+	r.PUT(fmt.Sprintf("/%s", name), handlers...)
 	return h
 }
 
 // Delete hook auto generate api
-func (api *api) Delete(r *gin.RouterGroup, name string) *Hook {
+func (api *api) Delete(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
 	handler := func(c *gin.Context) {
 		delete(name, api.mgo, c)
 	}
 	h := createHooks(api.mgo, handler)
-	r.DELETE(fmt.Sprintf("/%s", name), h.R)
+	handlers = append(handlers, h.R)
+	r.DELETE(fmt.Sprintf("/%s", name), handlers...)
 	return h
 }
 
