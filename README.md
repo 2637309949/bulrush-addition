@@ -31,9 +31,9 @@ logger.Info("after")
 ```
 ### mongo
 ```go
-var Mongo = mongo.New(conf.Cfg)
+mongo := mongo.New(conf.Cfg)
 func AddUsers(users []interface{}) {
-	User:= Mongo.Model("user")
+	User:= mongo.Model("user")
 	err := User.Insert(users...)
 	if err != nil {
 		panic(err)
@@ -41,40 +41,41 @@ func AddUsers(users []interface{}) {
 }
 // RegisterUser genrate user routers
 func RegisterUser(r *gin.RouterGroup) {
-	Mongo.API.List(r, "user").Pre(func(c *gin.Context) {
+	mongo.API.List(r, "user").Pre(func(c *gin.Context) {
 		fmt.Println("before")
 	}).Post(func(c *gin.Context) {
 		fmt.Println("after")
 	})
-	Mongo.API.One(r, "user")
-	Mongo.API.Create(r, "user")
-	Mongo.API.Update(r, "user")
-	Mongo.API.Delete(r, "user")
+	mongo.API.One(r, "user")
+	mongo.API.Create(r, "user")
+	mongo.API.Update(r, "user")
+	mongo.API.Delete(r, "user")
 }
 app.Use(Model, Route)
 // Open model autoHook
-app.Use(addition.Mongo.AutoHook)
+app.Use(mongo.AutoHook)
 ```
 ### redis
 ```go
-var Redis = redis.New(conf.Cfg)
+redis := redis.New(conf.Cfg)
+rules := []limit.Rule{
+	limit.Rule{
+		Methods: []string{"GET"},
+		Match:   "/api/v1/user*",
+		Rate:    1,
+	},
+	limit.Rule{
+		Methods: []string{"GET"},
+		Match:   "/api/v1/role*",
+		Rate:    2,
+	},
+}
 app.Use(&limit.Limit{
 	Frequency: &limit.Frequency{
 		Passages: []string{},
-		Rules: []limit.Rule{
-			limit.Rule{
-				Methods: []string{"GET"},
-				Match:   "/api/v1/user*",
-				Rate:    1,
-			},
-			limit.Rule{
-				Methods: []string{"GET"},
-				Match:   "/api/v1/role*",
-				Rate:    2,
-			},
-		},
+		Rules: rules,
 		Model: &limit.RedisModel{
-			Redis: addition.Redis,
+			Redis: redis,
 		},
 	},
 })
