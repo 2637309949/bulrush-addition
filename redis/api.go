@@ -11,7 +11,7 @@ import (
 	"github.com/go-redis/redis"
 )
 
-// API -
+// API defined api type
 type API struct {
 	Client *redis.Client
 }
