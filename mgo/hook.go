@@ -15,6 +15,7 @@ type (
 		mgo     *Mongo
 		pre     func(c *gin.Context)
 		post    func(c *gin.Context)
+		auth    func(c *gin.Context) bool
 		R       func(c *gin.Context)
 	}
 )
@@ -26,7 +27,11 @@ func (h *Hook) route() func(c *gin.Context) {
 			h.pre(c)
 		}
 		if h.handler != nil {
-			h.handler(c)
+			if h.auth != nil && h.auth(c) {
+				h.handler(c)
+			} else if h.auth == nil {
+				h.handler(c)
+			}
 		}
 		if h.post != nil {
 			h.post(c)
@@ -43,6 +48,12 @@ func (h *Hook) Pre(pre func(*gin.Context)) *Hook {
 // Post for pre handler
 func (h *Hook) Post(post func(*gin.Context)) *Hook {
 	h.post = post
+	return h
+}
+
+// Auth for pre handler
+func (h *Hook) Auth(auth func(*gin.Context) bool) *Hook {
+	h.auth = auth
 	return h
 }
 
