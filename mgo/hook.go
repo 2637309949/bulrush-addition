@@ -9,18 +9,20 @@ import (
 )
 
 type (
+	// HandlerAuthFunc defined auth type
+	HandlerAuthFunc func(c *gin.Context) bool
 	// Hook for API
 	Hook struct {
-		handler func(c *gin.Context)
+		auth    HandlerAuthFunc
+		handler gin.HandlerFunc
 		mgo     *Mongo
-		pre     func(c *gin.Context)
-		post    func(c *gin.Context)
-		auth    func(c *gin.Context) bool
-		R       func(c *gin.Context)
+		pre     gin.HandlerFunc
+		post    gin.HandlerFunc
+		R       gin.HandlerFunc
 	}
 )
 
-// route return gin middle
+// route defined gin middle
 func (h *Hook) route() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		if h.pre != nil {
@@ -39,21 +41,27 @@ func (h *Hook) route() func(c *gin.Context) {
 	}
 }
 
-// Pre for pre handler
+// Pre defined pre handler
 func (h *Hook) Pre(pre func(*gin.Context)) *Hook {
-	h.pre = pre
+	if h.pre == nil {
+		h.pre = pre
+	}
 	return h
 }
 
-// Post for pre handler
+// Post defined pre handler
 func (h *Hook) Post(post func(*gin.Context)) *Hook {
-	h.post = post
+	if h.post == nil {
+		h.post = post
+	}
 	return h
 }
 
-// Auth for pre handler
+// Auth defined pre handler
 func (h *Hook) Auth(auth func(*gin.Context) bool) *Hook {
-	h.auth = auth
+	if h.auth == nil {
+		h.auth = auth
+	}
 	return h
 }
 
