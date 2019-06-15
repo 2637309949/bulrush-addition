@@ -36,14 +36,20 @@ type conf struct {
 	IdleCheckFrequency time.Duration `json:"idleCheckFrequency" yaml:"idleCheckFrequency"`
 }
 
-// New new redis instance
-func New(cfg *bulrush.Config) *Redis {
-	conf := &conf{}
-	err := cfg.Unmarshal(conf)
-	if err != nil {
+func extConf(bulCfg *bulrush.Config) conf {
+	bul := &struct {
+		Conf conf `json:"redis" yaml:"redis"`
+	}{}
+	if err := bulCfg.Unmarshal(bul); err != nil {
 		panic(err)
 	}
-	client := createClient(conf)
+	return bul.Conf
+}
+
+// New new redis instance
+func New(cfg *bulrush.Config) *Redis {
+	conf := extConf(cfg)
+	client := createClient(&conf)
 	api := &API{
 		Client: client,
 	}
