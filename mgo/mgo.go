@@ -47,20 +47,14 @@ type conf struct {
 	MaxIdleTimeMS  int           `json:"maxIdleTimeMS" yaml:"maxIdleTimeMS"`
 }
 
-func extConf(bulCfg *bulrush.Config) conf {
-	bul := &struct {
-		Conf conf `json:"mongo" yaml:"mongo"`
-	}{}
-	if err := bulCfg.Unmarshal(bul); err != nil {
-		panic(err)
-	}
-	return bul.Conf
-}
-
 // New New mongo instance
 // Export Session, API and AutoHook
-func New(cfg *bulrush.Config) *Mongo {
-	conf := extConf(cfg)
+func New(bulCfg *bulrush.Config) *Mongo {
+	cf, err := bulCfg.Unmarshal("mongo", conf{})
+	if err != nil {
+		panic(err)
+	}
+	conf := cf.(conf)
 	session := createSession(&conf)
 	mgo := &Mongo{
 		m:       make([]map[string]interface{}, 0),

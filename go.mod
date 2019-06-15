@@ -9,3 +9,8 @@ require (
 	github.com/go-redis/redis v6.15.2+incompatible
 	github.com/thoas/go-funk v0.4.0
 )
+
+// ## just for dev
+replace github.com/2637309949/bulrush => ../bulrush
+
+// ## end
