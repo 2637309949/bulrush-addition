@@ -7,6 +7,7 @@ package mgo
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/2637309949/bulrush"
 	addition "github.com/2637309949/bulrush-addition"
@@ -18,21 +19,47 @@ import (
 // Mongo Type Defined
 type Mongo struct {
 	m        []map[string]interface{}
-	cfg      *bulrush.Config
+	cfg      *conf
 	Session  *mgo.Session
 	API      *api
 	AutoHook bulrush.PNBase
 }
 
+type conf struct {
+	Addrs          []string      `json:"addrs" yaml:"addrs"`
+	Timeout        time.Duration `json:"timeout" yaml:"timeout"`
+	Database       string        `json:"database" yaml:"database"`
+	ReplicaSetName string        `json:"replicaSetName" yaml:"replicaSetName"`
+	Source         string        `json:"source" yaml:"source"`
+	Service        string        `json:"service" yaml:"service"`
+	ServiceHost    string        `json:"serviceHost" yaml:"serviceHost"`
+	Mechanism      string        `json:"mechanism" yaml:"mechanism"`
+	Username       string        `json:"username" yaml:"username"`
+	Password       string        `json:"password" yaml:"password"`
+	PoolLimit      int           `json:"poolLimit" yaml:"poolLimit"`
+	PoolTimeout    time.Duration `json:"poolTimeout" yaml:"poolTimeout"`
+	ReadTimeout    time.Duration `json:"readTimeout" yaml:"readTimeout"`
+	WriteTimeout   time.Duration `json:"writeTimeout" yaml:"writeTimeout"`
+	AppName        string        `json:"appName" yaml:"appName"`
+	FailFast       bool          `json:"failFast" yaml:"failFast"`
+	Direct         bool          `json:"direct" yaml:"direct"`
+	MinPoolSize    int           `json:"minPoolSize" yaml:"minPoolSize"`
+	MaxIdleTimeMS  int           `json:"maxIdleTimeMS" yaml:"maxIdleTimeMS"`
+}
+
 // New New mongo instance
 // Export Session, API and AutoHook
 func New(config *bulrush.Config) *Mongo {
-	session := createSession(config)
+	conf := &conf{}
+	if err := config.Unmarshal(conf); err != nil {
+		panic(err)
+	}
+	session := createSession(conf)
 	mgo := &Mongo{
 		m:       make([]map[string]interface{}, 0),
-		cfg:     config,
-		Session: session,
+		cfg:     conf,
 		API:     &api{},
+		Session: session,
 	}
 	mgo.API.mgo = mgo
 	mgo.AutoHook = autoHook(mgo)
@@ -53,12 +80,12 @@ func (mgo *Mongo) Register(manifest map[string]interface{}) {
 
 // Vars return array of Var
 func (mgo *Mongo) Vars(name string) interface{} {
-	statement := funk.Find(mgo.m, func(item map[string]interface{}) bool {
+	m := funk.Find(mgo.m, func(item map[string]interface{}) bool {
 		flag := item["name"].(string) == name
 		return flag
 	}).(map[string]interface{})
-	if statement != nil {
-		return addition.CreateSlice(addition.LeftOkV(statement["reflector"]))
+	if m != nil {
+		return addition.CreateSlice(addition.LeftOkV(m["reflector"]))
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
@@ -66,11 +93,11 @@ func (mgo *Mongo) Vars(name string) interface{} {
 // Var return  Var
 // reflect from reflector entity
 func (mgo *Mongo) Var(name string) interface{} {
-	statement := funk.Find(mgo.m, func(item map[string]interface{}) bool {
+	m := funk.Find(mgo.m, func(item map[string]interface{}) bool {
 		return item["name"].(string) == name
 	}).(map[string]interface{})
-	if statement != nil {
-		return addition.CreateObject(addition.LeftOkV(statement["reflector"]))
+	if m != nil {
+		return addition.CreateObject(addition.LeftOkV(m["reflector"]))
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
@@ -78,12 +105,12 @@ func (mgo *Mongo) Var(name string) interface{} {
 // Model return instance
 // throw error if not exists these model
 func (mgo *Mongo) Model(name string) *mgo.Collection {
-	statement := funk.Find(mgo.m, func(item map[string]interface{}) bool {
+	m := funk.Find(mgo.m, func(item map[string]interface{}) bool {
 		return item["name"].(string) == name
 	}).(map[string]interface{})
-	if statement != nil {
-		db := addition.Some(statement["db"], mgo.cfg.Mongo.Database).(string)
-		collect := addition.Some(statement["collection"], name).(string)
+	if m != nil {
+		db := addition.Some(m["db"], mgo.cfg.Database).(string)
+		collect := addition.Some(m["collection"], name).(string)
 		return mgo.Session.DB(db).C(collect)
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
@@ -102,32 +129,32 @@ func autoHook(mgo *Mongo) bulrush.PNBase {
 }
 
 // dialInfo with default params
-func dialInfo(config *bulrush.Config) *mgo.DialInfo {
+func dialInfo(conf *conf) *mgo.DialInfo {
 	dial := &mgo.DialInfo{}
-	dial.Addrs = config.Mongo.Addrs
-	dial.Timeout = config.Mongo.Timeout
-	dial.Database = config.Mongo.Database
-	dial.ReplicaSetName = config.Mongo.ReplicaSetName
-	dial.Source = config.Mongo.Source
-	dial.Service = config.Mongo.Service
-	dial.ServiceHost = config.Mongo.ServiceHost
-	dial.Mechanism = config.Mongo.Mechanism
-	dial.Username = config.Mongo.Username
-	dial.Password = config.Mongo.Password
-	dial.PoolLimit = config.Mongo.PoolLimit
-	dial.PoolTimeout = config.Mongo.PoolTimeout
-	dial.ReadTimeout = config.Mongo.ReadTimeout
-	dial.WriteTimeout = config.Mongo.WriteTimeout
-	dial.AppName = config.Mongo.AppName
-	dial.FailFast = config.Mongo.FailFast
-	dial.Direct = config.Mongo.Direct
-	dial.MinPoolSize = config.Mongo.MinPoolSize
-	dial.MaxIdleTimeMS = config.Mongo.MaxIdleTimeMS
+	dial.Addrs = conf.Addrs
+	dial.Timeout = conf.Timeout
+	dial.Database = conf.Database
+	dial.ReplicaSetName = conf.ReplicaSetName
+	dial.Source = conf.Source
+	dial.Service = conf.Service
+	dial.ServiceHost = conf.ServiceHost
+	dial.Mechanism = conf.Mechanism
+	dial.Username = conf.Username
+	dial.Password = conf.Password
+	dial.PoolLimit = conf.PoolLimit
+	dial.PoolTimeout = conf.PoolTimeout
+	dial.ReadTimeout = conf.ReadTimeout
+	dial.WriteTimeout = conf.WriteTimeout
+	dial.AppName = conf.AppName
+	dial.FailFast = conf.FailFast
+	dial.Direct = conf.Direct
+	dial.MinPoolSize = conf.MinPoolSize
+	dial.MaxIdleTimeMS = conf.MaxIdleTimeMS
 	return dial
 }
 
 // obtain mongo connect session
-func createSession(cfg *bulrush.Config) *mgo.Session {
+func createSession(cfg *conf) *mgo.Session {
 	dial := dialInfo(cfg)
 	session, err := mgo.DialWithInfo(dial)
 	if err != nil {
