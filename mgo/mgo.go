@@ -16,14 +16,38 @@ import (
 	"github.com/thoas/go-funk"
 )
 
-// Mongo Type Defined
-type Mongo struct {
-	bulrush.PNBase
-	m       []map[string]interface{}
-	cfg     *Config
-	Session *mgo.Session
-	API     *api
-}
+type (
+	// Mongo Type Defined
+	Mongo struct {
+		bulrush.PNBase
+		m       []map[string]interface{}
+		cfg     *Config
+		Session *mgo.Session
+		API     *api
+	}
+	// Config defined mgo config
+	Config struct {
+		Addrs          []string      `json:"addrs" yaml:"addrs"`
+		Timeout        time.Duration `json:"timeout" yaml:"timeout"`
+		Database       string        `json:"database" yaml:"database"`
+		ReplicaSetName string        `json:"replicaSetName" yaml:"replicaSetName"`
+		Source         string        `json:"source" yaml:"source"`
+		Service        string        `json:"service" yaml:"service"`
+		ServiceHost    string        `json:"serviceHost" yaml:"serviceHost"`
+		Mechanism      string        `json:"mechanism" yaml:"mechanism"`
+		Username       string        `json:"username" yaml:"username"`
+		Password       string        `json:"password" yaml:"password"`
+		PoolLimit      int           `json:"poolLimit" yaml:"poolLimit"`
+		PoolTimeout    time.Duration `json:"poolTimeout" yaml:"poolTimeout"`
+		ReadTimeout    time.Duration `json:"readTimeout" yaml:"readTimeout"`
+		WriteTimeout   time.Duration `json:"writeTimeout" yaml:"writeTimeout"`
+		AppName        string        `json:"appName" yaml:"appName"`
+		FailFast       bool          `json:"failFast" yaml:"failFast"`
+		Direct         bool          `json:"direct" yaml:"direct"`
+		MinPoolSize    int           `json:"minPoolSize" yaml:"minPoolSize"`
+		MaxIdleTimeMS  int           `json:"maxIdleTimeMS" yaml:"maxIdleTimeMS"`
+	}
+)
 
 // Plugin defined plugin for bulrush
 func (mgo *Mongo) Plugin() bulrush.PNRet {
@@ -35,48 +59,6 @@ func (mgo *Mongo) Plugin() bulrush.PNRet {
 			}
 		})
 	}
-}
-
-// Config defined mgo config
-type Config struct {
-	Addrs          []string      `json:"addrs" yaml:"addrs"`
-	Timeout        time.Duration `json:"timeout" yaml:"timeout"`
-	Database       string        `json:"database" yaml:"database"`
-	ReplicaSetName string        `json:"replicaSetName" yaml:"replicaSetName"`
-	Source         string        `json:"source" yaml:"source"`
-	Service        string        `json:"service" yaml:"service"`
-	ServiceHost    string        `json:"serviceHost" yaml:"serviceHost"`
-	Mechanism      string        `json:"mechanism" yaml:"mechanism"`
-	Username       string        `json:"username" yaml:"username"`
-	Password       string        `json:"password" yaml:"password"`
-	PoolLimit      int           `json:"poolLimit" yaml:"poolLimit"`
-	PoolTimeout    time.Duration `json:"poolTimeout" yaml:"poolTimeout"`
-	ReadTimeout    time.Duration `json:"readTimeout" yaml:"readTimeout"`
-	WriteTimeout   time.Duration `json:"writeTimeout" yaml:"writeTimeout"`
-	AppName        string        `json:"appName" yaml:"appName"`
-	FailFast       bool          `json:"failFast" yaml:"failFast"`
-	Direct         bool          `json:"direct" yaml:"direct"`
-	MinPoolSize    int           `json:"minPoolSize" yaml:"minPoolSize"`
-	MaxIdleTimeMS  int           `json:"maxIdleTimeMS" yaml:"maxIdleTimeMS"`
-}
-
-// New New mongo instance
-// Export Session, API and AutoHook
-func New(bulCfg *bulrush.Config) *Mongo {
-	cf, err := bulCfg.Unmarshal("mongo", Config{})
-	if err != nil {
-		panic(err)
-	}
-	conf := cf.(Config)
-	session := createSession(&conf)
-	mgo := &Mongo{
-		m:       make([]map[string]interface{}, 0),
-		cfg:     &conf,
-		API:     &api{},
-		Session: session,
-	}
-	mgo.API.mgo = mgo
-	return mgo
 }
 
 // Register model
@@ -155,11 +137,29 @@ func dialInfo(conf *Config) *mgo.DialInfo {
 }
 
 // obtain mongo connect session
-func createSession(cfg *Config) *mgo.Session {
+func openDB(cfg *Config) *mgo.Session {
 	dial := dialInfo(cfg)
 	session, err := mgo.DialWithInfo(dial)
 	if err != nil {
 		panic(err)
 	}
 	return session
+}
+
+// New New mongo instance
+// Export Session, API and AutoHook
+func New(bulCfg *bulrush.Config) *Mongo {
+	cf, err := bulCfg.Unmarshal("mongo", Config{})
+	if err != nil {
+		panic(err)
+	}
+	conf := cf.(Config)
+	session := openDB(&conf)
+	mgo := &Mongo{}
+	mgo.m = make([]map[string]interface{}, 0)
+	mgo.cfg = &conf
+	mgo.API = &api{}
+	mgo.Session = session
+	mgo.API.mgo = mgo
+	return mgo
 }

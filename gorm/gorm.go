@@ -15,15 +15,22 @@ import (
 	"github.com/thoas/go-funk"
 )
 
-// GORM Type Defined
-type GORM struct {
-	bulrush.PNBase
-	m        []map[string]interface{}
-	cfg      *Config
-	DB       *jzgorm.DB
-	API      *api
-	AutoHook bulrush.PNBase
-}
+type (
+	// GORM Type Defined
+	GORM struct {
+		bulrush.PNBase
+		m        []map[string]interface{}
+		cfg      *Config
+		DB       *jzgorm.DB
+		API      *api
+		AutoHook bulrush.PNBase
+	}
+	// Config defined GORM Config
+	Config struct {
+		DBType string `json:"dbType" yaml:"dbType"`
+		URL    string `json:"url" yaml:"url"`
+	}
+)
 
 // Plugin defined plugin for bulrush
 func (gorm *GORM) Plugin() bulrush.PNRet {
@@ -35,12 +42,6 @@ func (gorm *GORM) Plugin() bulrush.PNRet {
 			}
 		})
 	}
-}
-
-// Config defined GORM Config
-type Config struct {
-	DBType string `json:"dbType" yaml:"dbType"`
-	URL    string `json:"url" yaml:"url"`
 }
 
 // Register model
@@ -57,6 +58,7 @@ func (gorm *GORM) Register(manifest map[string]interface{}) {
 
 // Vars return array of Var
 func (gorm *GORM) Vars(name string) interface{} {
+	fmt.Println(gorm)
 	m := funk.Find(gorm.m, func(item map[string]interface{}) bool {
 		flag := item["name"].(string) == name
 		return flag
@@ -79,8 +81,8 @@ func (gorm *GORM) Var(name string) interface{} {
 	panic(fmt.Errorf("manifest %s not found", name))
 }
 
-// obtain mongo connect session
-func createSession(cfg *Config) *jzgorm.DB {
+// openDB get gorm connect session
+func openDB(cfg *Config) *jzgorm.DB {
 	db, err := jzgorm.Open(cfg.DBType, cfg.URL)
 	if err != nil {
 		panic(err)
@@ -96,13 +98,11 @@ func New(bulCfg *bulrush.Config) *GORM {
 		panic(err)
 	}
 	conf := cf.(Config)
-	db := createSession(&conf)
-	gorm := &GORM{
-		m:   make([]map[string]interface{}, 0),
-		cfg: &conf,
-		API: &api{},
-		DB:  db,
-	}
-	gorm.API.gorm = gorm
+	db := openDB(&conf)
+	gorm := &GORM{}
+	gorm.m = make([]map[string]interface{}, 0)
+	gorm.cfg = &conf
+	gorm.API = &api{gorm: gorm}
+	gorm.DB = db
 	return gorm
 }
