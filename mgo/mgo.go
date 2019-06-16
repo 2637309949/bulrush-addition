@@ -18,14 +18,27 @@ import (
 
 // Mongo Type Defined
 type Mongo struct {
-	m        []map[string]interface{}
-	cfg      *conf
-	Session  *mgo.Session
-	API      *api
-	AutoHook bulrush.PNBase
+	bulrush.PNBase
+	m       []map[string]interface{}
+	cfg     *Config
+	Session *mgo.Session
+	API     *api
 }
 
-type conf struct {
+// Plugin defined plugin for bulrush
+func (mgo *Mongo) Plugin() bulrush.PNRet {
+	return func(r *gin.RouterGroup) {
+		funk.ForEach(mgo.m, func(item map[string]interface{}) {
+			if autoHook, exists := item["autoHook"]; exists == false || autoHook == true {
+				collection := item["name"].(string)
+				mgo.API.ALL(r, collection)
+			}
+		})
+	}
+}
+
+// Config defined mgo config
+type Config struct {
 	Addrs          []string      `json:"addrs" yaml:"addrs"`
 	Timeout        time.Duration `json:"timeout" yaml:"timeout"`
 	Database       string        `json:"database" yaml:"database"`
@@ -50,11 +63,11 @@ type conf struct {
 // New New mongo instance
 // Export Session, API and AutoHook
 func New(bulCfg *bulrush.Config) *Mongo {
-	cf, err := bulCfg.Unmarshal("mongo", conf{})
+	cf, err := bulCfg.Unmarshal("mongo", Config{})
 	if err != nil {
 		panic(err)
 	}
-	conf := cf.(conf)
+	conf := cf.(Config)
 	session := createSession(&conf)
 	mgo := &Mongo{
 		m:       make([]map[string]interface{}, 0),
@@ -63,7 +76,6 @@ func New(bulCfg *bulrush.Config) *Mongo {
 		Session: session,
 	}
 	mgo.API.mgo = mgo
-	mgo.AutoHook = autoHook(mgo)
 	return mgo
 }
 
@@ -117,20 +129,8 @@ func (mgo *Mongo) Model(name string) *mgo.Collection {
 	panic(fmt.Errorf("manifest %s not found", name))
 }
 
-// autoHook Automatic routing
-func autoHook(mgo *Mongo) bulrush.PNBase {
-	return bulrush.PNQuick(func(r *gin.RouterGroup) {
-		funk.ForEach(mgo.m, func(item map[string]interface{}) {
-			if autoHook, exists := item["autoHook"]; exists == false || autoHook == true {
-				collection := item["name"].(string)
-				mgo.API.ALL(r, collection)
-			}
-		})
-	})
-}
-
 // dialInfo with default params
-func dialInfo(conf *conf) *mgo.DialInfo {
+func dialInfo(conf *Config) *mgo.DialInfo {
 	dial := &mgo.DialInfo{}
 	dial.Addrs = conf.Addrs
 	dial.Timeout = conf.Timeout
@@ -155,7 +155,7 @@ func dialInfo(conf *conf) *mgo.DialInfo {
 }
 
 // obtain mongo connect session
-func createSession(cfg *conf) *mgo.Session {
+func createSession(cfg *Config) *mgo.Session {
 	dial := dialInfo(cfg)
 	session, err := mgo.DialWithInfo(dial)
 	if err != nil {

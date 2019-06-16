@@ -17,36 +17,30 @@ import (
 
 // GORM Type Defined
 type GORM struct {
+	bulrush.PNBase
 	m        []map[string]interface{}
-	cfg      *conf
+	cfg      *Config
 	DB       *jzgorm.DB
 	API      *api
 	AutoHook bulrush.PNBase
 }
 
-type conf struct {
-	DBType string `json:"dbType" yaml:"dbType"`
-	URL    string `json:"url" yaml:"url"`
+// Plugin defined plugin for bulrush
+func (gorm *GORM) Plugin() bulrush.PNRet {
+	return func(r *gin.RouterGroup) {
+		funk.ForEach(gorm.m, func(item map[string]interface{}) {
+			if autoHook, exists := item["autoHook"]; exists == false || autoHook == true {
+				collection := item["name"].(string)
+				gorm.API.ALL(r, collection)
+			}
+		})
+	}
 }
 
-// New New mongo instance
-// Export Session, API and AutoHook
-func New(bulCfg *bulrush.Config) *GORM {
-	cf, err := bulCfg.Unmarshal("sql", conf{})
-	if err != nil {
-		panic(err)
-	}
-	conf := cf.(conf)
-	db := createSession(&conf)
-	gorm := &GORM{
-		m:   make([]map[string]interface{}, 0),
-		cfg: &conf,
-		API: &api{},
-		DB:  db,
-	}
-	gorm.API.gorm = gorm
-	gorm.AutoHook = autoHook(gorm)
-	return gorm
+// Config defined GORM Config
+type Config struct {
+	DBType string `json:"dbType" yaml:"dbType"`
+	URL    string `json:"url" yaml:"url"`
 }
 
 // Register model
@@ -86,7 +80,7 @@ func (gorm *GORM) Var(name string) interface{} {
 }
 
 // obtain mongo connect session
-func createSession(cfg *conf) *jzgorm.DB {
+func createSession(cfg *Config) *jzgorm.DB {
 	db, err := jzgorm.Open(cfg.DBType, cfg.URL)
 	if err != nil {
 		panic(err)
@@ -94,14 +88,21 @@ func createSession(cfg *conf) *jzgorm.DB {
 	return db
 }
 
-// autoHook Automatic routing
-func autoHook(gorm *GORM) bulrush.PNBase {
-	return bulrush.PNQuick(func(r *gin.RouterGroup) {
-		funk.ForEach(gorm.m, func(item map[string]interface{}) {
-			if autoHook, exists := item["autoHook"]; exists == false || autoHook == true {
-				collection := item["name"].(string)
-				gorm.API.ALL(r, collection)
-			}
-		})
-	})
+// New New mongo instance
+// Export Session, API and AutoHook
+func New(bulCfg *bulrush.Config) *GORM {
+	cf, err := bulCfg.Unmarshal("sql", Config{})
+	if err != nil {
+		panic(err)
+	}
+	conf := cf.(Config)
+	db := createSession(&conf)
+	gorm := &GORM{
+		m:   make([]map[string]interface{}, 0),
+		cfg: &conf,
+		API: &api{},
+		DB:  db,
+	}
+	gorm.API.gorm = gorm
+	return gorm
 }
