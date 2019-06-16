@@ -6,11 +6,9 @@ package gorm
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -28,6 +26,7 @@ func one(name string, gorm *GORM, c *gin.Context) {
 func list(name string, gorm *GORM, c *gin.Context) {
 	var match map[string]interface{}
 	list := gorm.Vars(name)
+	one := gorm.Var(name)
 	cond := c.DefaultQuery("cond", "%7B%7D")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
@@ -42,10 +41,10 @@ func list(name string, gorm *GORM, c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	fmt.Println(reflect.TypeOf(list))
 	var totalrecords int
 	gorm.DB.Offset((page - 1) * size).Limit(size).Find(&list)
-	gorm.DB.Count(&totalrecords)
+	gorm.DB.Model(&one).Count(&totalrecords)
+
 	totalpages := math.Ceil(float64(totalrecords) / float64(size))
 	c.JSON(http.StatusOK, gin.H{
 		"range":        _range,
