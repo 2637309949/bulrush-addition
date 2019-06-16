@@ -61,7 +61,7 @@ func list(name string, mgo *Mongo, c *gin.Context) {
 	if _range != "ALL" {
 		query = query.Skip((page - 1) * size).Limit(size)
 	}
-	err = query.All(&list)
+	err = query.All(list)
 	totalpages := math.Ceil(float64(totalrecords) / float64(size))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})

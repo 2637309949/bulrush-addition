@@ -42,8 +42,8 @@ func list(name string, gorm *GORM, c *gin.Context) {
 		return
 	}
 	var totalrecords int
-	gorm.DB.Offset((page - 1) * size).Limit(size).Find(&list)
-	gorm.DB.Model(&one).Count(&totalrecords)
+	gorm.DB.Offset((page - 1) * size).Limit(size).Find(list)
+	gorm.DB.Model(one).Count(&totalrecords)
 
 	totalpages := math.Ceil(float64(totalrecords) / float64(size))
 	c.JSON(http.StatusOK, gin.H{

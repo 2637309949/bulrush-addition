@@ -11,19 +11,29 @@ import (
 // CreateSlice reflect and create
 func CreateSlice(target interface{}) interface{} {
 	tType := reflect.ValueOf(target).Type()
-	if tType.Kind() == reflect.Ptr {
-		tType = tType.Elem()
-	}
-	tSlice := reflect.MakeSlice(reflect.SliceOf(tType), 0, 0).Interface()
-	return tSlice
+	tType = indirectType(tType)
+	return reflect.New(reflect.SliceOf(tType)).Interface()
 }
 
 // CreateObject reflect and create
 func CreateObject(target interface{}) interface{} {
 	tType := reflect.ValueOf(target).Type()
-	if tType.Kind() == reflect.Ptr {
-		tType = tType.Elem()
+	tType = indirectType(tType)
+	return reflect.New(tType).Interface()
+}
+
+// indirect from ptr
+func indirectValue(reflectValue reflect.Value) reflect.Value {
+	for reflectValue.Kind() == reflect.Ptr {
+		reflectValue = reflectValue.Elem()
 	}
-	tObject := reflect.New(tType).Interface()
-	return tObject
+	return reflectValue
+}
+
+// indirect from ptr
+func indirectType(reflectType reflect.Type) reflect.Type {
+	for reflectType.Kind() == reflect.Ptr {
+		reflectType = reflectType.Elem()
+	}
+	return reflectType
 }
