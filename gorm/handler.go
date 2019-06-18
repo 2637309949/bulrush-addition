@@ -24,27 +24,49 @@ func one(name string, gorm *GORM, c *gin.Context) {
 }
 
 func list(name string, gorm *GORM, c *gin.Context) {
-	var match map[string]interface{}
+	var whereMap map[string]interface{}
 	list := gorm.Vars(name)
 	one := gorm.Var(name)
-	cond := c.DefaultQuery("cond", "%7B%7D")
+	where := c.DefaultQuery("where", "%7B%7D")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
 	_range := c.DefaultQuery("range", "PAGE")
-	unescapeCond, err := url.QueryUnescape(cond)
+	unescapeWhere, err := url.QueryUnescape(where)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	err = json.Unmarshal([]byte(unescapeCond), &match)
+	err = json.Unmarshal([]byte(unescapeWhere), &whereMap)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	var totalrecords int
-	gorm.DB.Offset((page - 1) * size).Limit(size).Find(list)
-	gorm.DB.Model(one).Count(&totalrecords)
 
+	query := NewQuery(whereMap, c.DefaultQuery("select", ""), c.DefaultQuery("order", ""), c.DefaultQuery("related", ""))
+	sel := query.BuildSelect()
+	ord := query.BuildOrder()
+	rel := query.BuildRelated()
+	sql, err := query.BuildWhere()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	var totalrecords int
+	db := gorm.DB.Where(sql).Offset((page - 1) * size).Limit(size)
+	if sel != "" {
+		db = db.Select(sel)
+	}
+	if ord != "" {
+		db = db.Order(ord)
+	}
+	for _, rl := range rel {
+		if rl != "" {
+			db = db.Preload(rl)
+		}
+	}
+	db.Find(list)
+	gorm.DB.Model(one).Where(sql).Count(&totalrecords)
 	totalpages := math.Ceil(float64(totalrecords) / float64(size))
 	c.JSON(http.StatusOK, gin.H{
 		"range":        _range,
@@ -52,8 +74,9 @@ func list(name string, gorm *GORM, c *gin.Context) {
 		"totalpages":   totalpages,
 		"size":         size,
 		"totalrecords": totalrecords,
-		"cond":         match,
+		"where":        whereMap,
 		"list":         list,
+		"sql":          sql,
 	})
 }
 
