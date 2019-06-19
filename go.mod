@@ -9,6 +9,8 @@ require (
 	github.com/go-redis/redis v6.15.2+incompatible
 	github.com/jinzhu/gorm v1.9.9
 	github.com/thoas/go-funk v0.4.0
+	gopkg.in/go-playground/validator.v8 v8.18.2
+	gopkg.in/go-playground/validator.v9 v9.29.0
 )
 
 // ## just for dev

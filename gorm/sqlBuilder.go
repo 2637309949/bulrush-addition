@@ -23,7 +23,7 @@ type Query struct {
 
 // NewQuery defined new a Query struct
 func NewQuery(where map[string]interface{}, sel string, order string, rel string) *Query {
-	var cloneWhere map[string]interface{}
+	cloneWhere := map[string]interface{}{}
 	addition.CopyMap(where, cloneWhere)
 	return &Query{
 		Where:   cloneWhere,
@@ -202,7 +202,6 @@ func (q *Query) BuildWhere() (string, error) {
 	}
 	fmt.Println(flatMapJSON)
 	sql, err := shuttle("", flatMapJSON)
-	fmt.Println(sql)
 	return sql, err
 }
 
