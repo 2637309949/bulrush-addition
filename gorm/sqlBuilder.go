@@ -9,36 +9,14 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-
-	addition "github.com/2637309949/bulrush-addition"
 )
-
-// Query defined common query paramters
-type Query struct {
-	Where   map[string]interface{}
-	Select  string
-	Order   string
-	Related string
-}
-
-// NewQuery defined new a Query struct
-func NewQuery(where map[string]interface{}, sel string, order string, rel string) *Query {
-	cloneWhere := map[string]interface{}{}
-	addition.CopyMap(where, cloneWhere)
-	return &Query{
-		Where:   cloneWhere,
-		Select:  sel,
-		Order:   order,
-		Related: rel,
-	}
-}
 
 func formatString(key string, instruct string, value string) string {
 	return fmt.Sprintf("%s %s '%s'", key, instruct, value)
 }
 
-func formatFloat64(key string, instruct string, value float64) string {
-	return fmt.Sprintf("%s %s %f", key, instruct, value)
+func formatFloat64(key string, instruct string, value interface{}) string {
+	return fmt.Sprintf("%s %s %v", key, instruct, value)
 }
 
 func formatArray(key string, instruct string, value interface{}) string {
@@ -67,7 +45,7 @@ func direct2Sql(key string, instruct string, value interface{}) string {
 		return formatString(key, instruct, value.(string))
 	}
 	if reflect.TypeOf(value).Kind() == reflect.Float64 {
-		return formatFloat64(key, instruct, value.(float64))
+		return formatFloat64(key, instruct, value)
 	}
 	if reflect.TypeOf(value).Kind() == reflect.Slice {
 		return formatArray(key, instruct, value)
@@ -192,39 +170,4 @@ func shuttle(key string, value interface{}) (string, error) {
 		return direct2Sql(key, "=", value), nil
 	}
 	return "", errors.New("shuttle6 error")
-}
-
-// BuildWhere defined where sql
-func (q *Query) BuildWhere() (string, error) {
-	flatMapJSON, err := flatAndToOr(q.Where)
-	if err != nil {
-		return "", err
-	}
-	fmt.Println(flatMapJSON)
-	sql, err := shuttle("", flatMapJSON)
-	return sql, err
-}
-
-// BuildSelect defined select sql
-func (q *Query) BuildSelect() string {
-	return q.Select
-}
-
-// BuildOrder defined order sql
-func (q *Query) BuildOrder() string {
-	var ordersWithDirect []string
-	orders := strings.Split(q.Order, ",")
-	for _, item := range orders {
-		if strings.HasPrefix(item, "-") {
-			ordersWithDirect = append(ordersWithDirect, fmt.Sprintf("%s %s", item, "desc"))
-		} else {
-			ordersWithDirect = append(ordersWithDirect, item)
-		}
-	}
-	return strings.Join(ordersWithDirect, ",")
-}
-
-// BuildRelated defined related sql for preLoad
-func (q *Query) BuildRelated() []string {
-	return strings.Split(q.Related, ",")
 }

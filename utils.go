@@ -92,12 +92,12 @@ func LeftSV(left interface{}, right error) interface{} {
 }
 
 // CopyMap -
-func CopyMap(src map[string]interface{}, dest map[string]interface{}) error {
+func CopyMap(src map[string]interface{}, dest interface{}) error {
 	jsonStr, err := json.Marshal(src)
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(jsonStr, &dest)
+	err = json.Unmarshal(jsonStr, dest)
 	if err != nil {
 		return err
 	}

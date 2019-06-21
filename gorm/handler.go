@@ -8,31 +8,44 @@ import (
 	"encoding/json"
 	"math"
 	"net/http"
-	"net/url"
 	"reflect"
 	"strconv"
+	"time"
 
 	addition "github.com/2637309949/bulrush-addition"
-	"gopkg.in/go-playground/validator.v9"
-
 	"github.com/gin-gonic/gin"
+	"gopkg.in/go-playground/validator.v9"
 )
 
-type puFormat struct {
-	Cond map[string]interface{} `bson:"cond" form:"cond" json:"cond" xml:"cond"`
-	Muti bool                   `bson:"muti" form:"muti" json:"muti" xml:"muti"`
-	Doc  interface{}            `bson:"doc" form:"doc" json:"doc" xml:"doc" `
+type form struct {
+	Docs     []map[string]interface{} `form:"docs" json:"docs" xml:"docs"`
+	Category interface{}              `form:"category" json:"category" xml:"category" `
 }
 
 func one(name string, gorm *GORM, c *gin.Context) {
+	db := gorm.DB
+	one := gorm.Var(name)
+	q := Query{}
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		addition.RushLogger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	one := gorm.Var(name)
-	if err := gorm.DB.First(one, id).Error; err != nil {
+	err = c.BindQuery(&q)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	if q.Select != "" {
+		db = db.Select(q.Select)
+	}
+	for _, pre := range q.BuildRelated() {
+		if pre != "" {
+			db = db.Preload(pre)
+		}
+	}
+	if err := db.First(one, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
@@ -40,47 +53,44 @@ func one(name string, gorm *GORM, c *gin.Context) {
 }
 
 func list(name string, gorm *GORM, c *gin.Context) {
-	var whereMap map[string]interface{}
+	db := gorm.DB
+	q := Query{}
+	totalrecords := 0
 	list := gorm.Vars(name)
 	one := gorm.Var(name)
-	where := c.DefaultQuery("where", "%7B%7D")
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
-	_range := c.DefaultQuery("range", "PAGE")
-	unescapeWhere, err := url.QueryUnescape(where)
+	err := c.BindQuery(&q)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	err = json.Unmarshal([]byte(unescapeWhere), &whereMap)
+	sql, err := q.BuildWhere()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	query := NewQuery(whereMap, c.DefaultQuery("select", ""), c.DefaultQuery("order", ""), c.DefaultQuery("related", ""))
-	sel := query.BuildSelect()
-	ord := query.BuildOrder()
-	rel := query.BuildRelated()
-	sql, err := query.BuildWhere()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-	var totalrecords int
-	db := gorm.DB.Where(sql)
-	if _range != "ALL" {
-		db = db.Offset((page - 1) * size).Limit(size)
-	}
-	if sel != "" {
-		db = db.Select(sel)
-	}
-	if ord != "" {
-		db = db.Order(ord)
-	}
-	for _, rl := range rel {
-		if rl != "" {
-			db = db.Preload(rl)
+	if q.Range != "ALL" {
+		q.Range = "PAGE"
+		if q.Page == 0 {
+			q.Page = 1
 		}
+		if q.Size == 0 {
+			q.Size = 20
+		}
+		db = db.Offset((q.Page - 1) * q.Size).Limit(q.Size)
+	}
+	if q.Select != "" {
+		db = db.Select(q.Select)
+	}
+	if q.BuildOrder() != "" {
+		db = db.Order(q.Order)
+	}
+	for _, pre := range q.BuildRelated() {
+		if pre != "" {
+			db = db.Preload(pre)
+		}
+	}
+	if sql != "" {
+		db = db.Where(sql)
 	}
 	if err := db.Find(list).Error; err != nil {
 		if err != nil {
@@ -94,23 +104,34 @@ func list(name string, gorm *GORM, c *gin.Context) {
 			return
 		}
 	}
-	if _range != "ALL" {
-		totalpages := math.Ceil(float64(totalrecords) / float64(size))
+	if q.Select != "" {
+		list, err = q.BuildSelect(list)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	}
+	if q.Range != "ALL" {
+		totalpages := math.Ceil(float64(totalrecords) / float64(q.Size))
 		c.JSON(http.StatusOK, gin.H{
-			"range":        _range,
-			"page":         page,
+			"range":        q.Range,
+			"page":         q.Page,
 			"totalpages":   totalpages,
-			"size":         size,
+			"size":         q.Size,
 			"totalrecords": totalrecords,
-			"where":        whereMap,
+			"where":        q.WhereMap,
+			"select":       q.Select,
+			"related":      q.Related,
 			"list":         list,
 			"sql":          sql,
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
-			"range":        _range,
+			"range":        q.Range,
 			"totalrecords": totalrecords,
-			"where":        whereMap,
+			"where":        q.WhereMap,
+			"select":       q.Select,
+			"related":      q.Related,
 			"list":         list,
 			"sql":          sql,
 		})
@@ -118,120 +139,74 @@ func list(name string, gorm *GORM, c *gin.Context) {
 }
 
 func create(name string, gorm *GORM, c *gin.Context) {
-	var form interface{}
+	var form form
 	binds := gorm.Vars(name)
-	bind := gorm.Var(name)
-	buf := make([]byte, 1024)
-	num, _ := c.Request.Body.Read(buf)
-	buf = buf[0:num]
-	err := json.Unmarshal(buf, &form)
+	if err := c.ShouldBindJSON(&form); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	docsByte, err := json.Marshal(form.Docs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	if reflect.TypeOf(form).Kind() == reflect.Map {
-		form = []interface{}{form}
+	if err := json.Unmarshal(docsByte, binds); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
 	}
-
-	// to model
-	slicev := reflect.ValueOf(binds).Elem()
-	slicev = slicev.Slice(0, slicev.Cap())
-	for _, f := range form.([]interface{}) {
-		mf, err := json.Marshal(f)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		err = json.Unmarshal(mf, bind)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		slicev = reflect.Append(slicev, reflect.ValueOf(bind).Elem())
-		slicev = slicev.Slice(0, slicev.Cap())
-	}
-	reflect.ValueOf(binds).Elem().Set(slicev)
-
-	// validate model
 	validate := validator.New()
 	count := reflect.ValueOf(binds).Elem().Len()
+	tx := gorm.DB.Begin()
 	for count > 0 {
 		count = count - 1
 		ele := reflect.ValueOf(binds).Elem().Index(count).Interface()
-		err := validate.Struct(ele)
+		ptr := reflect.New(reflect.TypeOf(ele))
+		ptr.Elem().Set(reflect.ValueOf(ele))
+		err := validate.Struct(ptr)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
-	}
-
-	// save model
-	count = reflect.ValueOf(binds).Elem().Len()
-	for count > 0 {
-		count = count - 1
-		ele := reflect.ValueOf(binds).Elem().Index(count).Interface()
-		ptrEle := reflect.New(reflect.TypeOf(ele))
-		ptrEle.Elem().Set(reflect.ValueOf(ele))
-		if err := gorm.DB.Create(ele).Error; err != nil {
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-				return
-			}
+		if err := tx.Create(ptr.Interface()).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
 		}
+	}
+	err = tx.Commit().Error
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})
 }
 
-func delete(name string, gorm *GORM, c *gin.Context) {
-	var form interface{}
-	binds := gorm.Vars(name)
+func remove(name string, gorm *GORM, c *gin.Context) {
+	var form form
 	bind := gorm.Var(name)
-	buf := make([]byte, 1024)
-	num, _ := c.Request.Body.Read(buf)
-	buf = buf[0:num]
-	err := json.Unmarshal(buf, &form)
-	if err != nil {
+	if err := c.ShouldBindJSON(&form); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	if reflect.TypeOf(form).Kind() == reflect.Map {
-		form = []interface{}{form}
-	}
-
-	// map interface{} type to model type
-	slicev := reflect.ValueOf(binds).Elem()
-	slicev = slicev.Slice(0, slicev.Cap())
-	for _, f := range form.([]interface{}) {
-		mf, err := json.Marshal(f)
-		if err != nil {
+	tx := gorm.DB.Begin()
+	for _, item := range form.Docs {
+		id, ok := item["id"]
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "no id found!"})
+			return
+		}
+		if err := tx.Model(bind).Where("id=?", id).Update(map[string]interface{}{"deletedAt": time.Now()}).Error; err != nil {
+			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
-		err = json.Unmarshal(mf, bind)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		slicev = reflect.Append(slicev, reflect.ValueOf(bind).Elem())
-		slicev = slicev.Slice(0, slicev.Cap())
 	}
-	reflect.ValueOf(binds).Elem().Set(slicev)
-
-	// delete model
-	count := reflect.ValueOf(binds).Elem().Len()
-	for count > 0 {
-		count = count - 1
-		ele := reflect.ValueOf(binds).Elem().Index(count).Interface()
-		ptrEle := reflect.New(reflect.TypeOf(ele))
-		ptrEle.Elem().Set(reflect.ValueOf(ele))
-		if err := gorm.DB.Delete(ele).Error; err != nil {
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-				return
-			}
-		}
+	err := tx.Commit().Error
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",
@@ -239,48 +214,31 @@ func delete(name string, gorm *GORM, c *gin.Context) {
 }
 
 func update(name string, gorm *GORM, c *gin.Context) {
-	var form interface{}
-	binds := gorm.Vars(name)
+	var form form
 	bind := gorm.Var(name)
-	buf := make([]byte, 1024)
-	num, _ := c.Request.Body.Read(buf)
-	buf = buf[0:num]
-	err := json.Unmarshal(buf, &form)
-	if err != nil {
+	if err := c.ShouldBindJSON(&form); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	if reflect.TypeOf(form).Kind() == reflect.Map {
-		form = []interface{}{form}
-	}
-
-	// map interface{} type to model type
-	slicev := reflect.ValueOf(binds).Elem()
-	slicev = slicev.Slice(0, slicev.Cap())
-	for _, f := range form.([]interface{}) {
-		mf, err := json.Marshal(f)
-		if err != nil {
+	tx := gorm.DB.Begin()
+	for _, item := range form.Docs {
+		id, ok := item["id"]
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "no id found!"})
+			return
+		}
+		item["updatedAt"] = time.Now()
+		delete(item, "createdAt")
+		if err := tx.Model(bind).Where("id=?", id).Update(item).Error; err != nil {
+			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
-		err = json.Unmarshal(mf, bind)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		slicev = reflect.Append(slicev, reflect.ValueOf(bind).Elem())
-		slicev = slicev.Slice(0, slicev.Cap())
 	}
-	reflect.ValueOf(binds).Elem().Set(slicev)
-
-	// update model
-	for _, f := range form.([]interface{}) {
-		if err := gorm.DB.Model(bind).Updates(f).Error; err != nil {
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-				return
-			}
-		}
+	err := tx.Commit().Error
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",

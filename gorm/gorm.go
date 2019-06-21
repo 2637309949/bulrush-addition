@@ -58,7 +58,6 @@ func (gorm *GORM) Register(manifest map[string]interface{}) {
 
 // Vars return array of Var
 func (gorm *GORM) Vars(name string) interface{} {
-	fmt.Println(gorm)
 	m := funk.Find(gorm.m, func(item map[string]interface{}) bool {
 		flag := item["name"].(string) == name
 		return flag

@@ -64,7 +64,7 @@ func (api *api) Update(r *gin.RouterGroup, name string, handlers ...gin.HandlerF
 // Delete hook auto generate api
 func (api *api) Delete(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
 	handler := func(c *gin.Context) {
-		delete(name, api.gorm, c)
+		remove(name, api.gorm, c)
 	}
 	h := createHooks(api.gorm, handler)
 	handlers = append(handlers, h.R)
@@ -87,6 +87,6 @@ func (api *api) ALL(r *gin.RouterGroup, name string) {
 		update(name, api.gorm, c)
 	})
 	r.DELETE(fmt.Sprintf("/%s", name), func(c *gin.Context) {
-		delete(name, api.gorm, c)
+		remove(name, api.gorm, c)
 	})
 }
