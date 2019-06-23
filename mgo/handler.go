@@ -25,17 +25,31 @@ func one(name string, mgo *Mongo, c *gin.Context) {
 	id := c.Param("id")
 	Model := mgo.Model(name)
 	one := mgo.Var(name)
-	isOj := bson.IsObjectIdHex(id)
-	if !isOj {
+	if !bson.IsObjectIdHex(id) {
 		c.JSON(http.StatusNotAcceptable, gin.H{"message": "not a valid id"})
 		return
 	}
-	err := Model.FindId(bson.ObjectIdHex(id)).One(one)
+	q := &Query{name: name, model: one}
+	err := c.ShouldBindQuery(q)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, one)
+	pipe, err := q.BuildPipe(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	ret := map[string]interface{}{}
+	err = Model.Pipe(pipe).One(&ret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"pipe": pipe,
+		"one":  ret,
+	})
 }
 
 func list(name string, mgo *Mongo, c *gin.Context) {
@@ -99,7 +113,7 @@ func create(name string, mgo *Mongo, c *gin.Context) {
 	})
 }
 
-func delete(name string, mgo *Mongo, c *gin.Context) {
+func remove(name string, mgo *Mongo, c *gin.Context) {
 	Model := mgo.Model(name)
 	var puDate puFormat
 	if error := c.ShouldBind(&puDate); error != nil {

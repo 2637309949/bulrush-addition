@@ -61,9 +61,9 @@ func (q *Query) BuildOrder() string {
 	orders := strings.Split(q.Order, ",")
 	for _, item := range orders {
 		if strings.HasPrefix(item, "-") {
-			ordersWithDirect = append(ordersWithDirect, fmt.Sprintf("%s %s", item, "desc"))
+			ordersWithDirect = append(ordersWithDirect, fmt.Sprintf("%s %s", strings.Replace(item, "-", "", 1), "desc"))
 		} else {
-			ordersWithDirect = append(ordersWithDirect, item)
+			ordersWithDirect = append(ordersWithDirect, strings.Replace(item, "+", "", 1))
 		}
 	}
 	return strings.Join(ordersWithDirect, ",")
