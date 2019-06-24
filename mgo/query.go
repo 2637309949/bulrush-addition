@@ -31,8 +31,17 @@ type Query struct {
 	Range    string `form:"range" json:"range" xml:"range"`
 }
 
-func replaceOid(target interface{}) interface{} {
+// NewQuery defined return query with default
+func NewQuery() *Query {
+	return &Query{
+		Page:  1,
+		Size:  20,
+		Range: "PAGE",
+		Order: "_created",
+	}
+}
 
+func replaceOid(target interface{}) interface{} {
 	targetOid, ok := target.(map[string]interface{})
 	if ok {
 		v, ok := targetOid["$oid"]
@@ -91,26 +100,40 @@ func (q *Query) BuildPipe(id string) ([]map[string]interface{}, error) {
 	if err != nil {
 		return []map[string]interface{}{}, err
 	}
-	pipe = append(pipe, map[string]interface{}{
-		"$match": match,
-	})
-	related := q.BuildRelated()
-	if related != nil {
-		pipe = append(pipe, related...)
-	}
-	order := q.BuildOrder()
-	if order != nil {
+	if q.Range != "ALL" {
 		pipe = append(pipe, map[string]interface{}{
-			"$sort": order,
+			"$match": match,
 		})
-	}
-	project := q.BuildProject()
-	if project != nil {
-		pipe = append(pipe, map[string]interface{}{
-			"$project": project,
-		})
+		related := q.BuildRelated()
+		if related != nil {
+			pipe = append(pipe, related...)
+		}
+		order := q.BuildOrder()
+		if order != nil {
+			pipe = append(pipe, map[string]interface{}{
+				"$sort": order,
+			})
+		}
+		project := q.BuildProject()
+		if project != nil {
+			pipe = append(pipe, map[string]interface{}{
+				"$project": project,
+			})
+		}
 	}
 	return pipe, nil
+}
+
+// BuildPipeWithPage defined pipe array
+func (q *Query) BuildPipeWithPage(id string) ([]map[string]interface{}, error) {
+	pipe, err := q.BuildPipe(id)
+	pipe = append(pipe, map[string]interface{}{
+		"$skip": (q.Page - 1) * q.Size,
+	})
+	pipe = append(pipe, map[string]interface{}{
+		"$limit": q.Size,
+	})
+	return pipe, err
 }
 
 // BuildOrder defined order sql

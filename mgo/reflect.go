@@ -5,6 +5,7 @@
 package mgo
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -13,6 +14,8 @@ func fieldTag(target interface{}, field string, tagname string) string {
 	if elementType.Kind() == reflect.Ptr {
 		elementType = elementType.Elem()
 	}
+	fmt.Println("elementType = ", elementType)
+
 	tag := ""
 	for i := 0; i < elementType.NumField(); i++ {
 		bsonFieldTag := elementType.Field(i).Tag.Get("bson")
