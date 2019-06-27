@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-package mgo
+package mgoext
 
 import (
 	"errors"
@@ -174,20 +174,5 @@ func New(bulCfg *bulrush.Config) *Mongo {
 	mgo.cfg = conf
 	mgo.Session = session
 	mgo.API = &api{mgo: mgo}
-	mgo.APIFeature1 = &api{mgo: mgo}
-	mgo.APIFeature2 = &api{mgo: mgo}
-	mgo.APIFeature3 = &api{mgo: mgo}
-	mgo.APIFeature4 = &api{mgo: mgo}
-	mgo.APIFeature5 = &api{mgo: mgo}
-	mgo.APIFeature6 = &api{mgo: mgo}
-	mgo.APIFeature7 = &api{mgo: mgo}
-	mgo.APIFeature8 = &api{mgo: mgo}
-	mgo.APIFeature9 = &api{mgo: mgo}
-	mgo.APIFeature10 = &api{mgo: mgo}
-	mgo.APIFeature11 = &api{mgo: mgo}
-	mgo.APIFeature12 = &api{mgo: mgo}
-	mgo.APIFeature13 = &api{mgo: mgo}
-	mgo.APIFeature14 = &api{mgo: mgo}
-	mgo.APIFeature15 = &api{mgo: mgo}
 	return mgo
 }
