@@ -28,11 +28,11 @@ func initLogger() {
 			},
 			&logger.Transport{
 				Dirname: path.Join(path.Join(".", BLOGPATH), "combined"),
-				Level:   logger.INFOLevel,
+				Level:   logger.SILLYLevel,
 				Maxsize: logger.Maxsize,
 			},
 			&logger.Transport{
-				Level: logger.INFOLevel,
+				Level: logger.SILLYLevel,
 			},
 		}
 	} else {
