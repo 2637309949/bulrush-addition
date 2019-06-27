@@ -10,12 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type (
-	// API type defined
-	api struct {
-		mgo *Mongo
-	}
-)
+// API type defined
+type api struct {
+	mgo *Mongo
+}
 
 // One hook auto generate api
 func (api *api) One(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
@@ -73,20 +71,20 @@ func (api *api) Delete(r *gin.RouterGroup, name string, handlers ...gin.HandlerF
 }
 
 // ALL hook auto generate api
-func (api *api) ALL(r *gin.RouterGroup, name string) {
-	r.GET(fmt.Sprintf("/%s", name), func(c *gin.Context) {
+func (api *api) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) {
+	r.GET(fmt.Sprintf("/%s", name), combineHF(func(c *gin.Context) {
 		list(name, api.mgo, c)
-	})
-	r.GET(fmt.Sprintf("/%s/:id", name), func(c *gin.Context) {
+	}, handlers)...)
+	r.GET(fmt.Sprintf("/%s/:id", name), combineHF(func(c *gin.Context) {
 		one(name, api.mgo, c)
-	})
-	r.POST(fmt.Sprintf("/%s", name), func(c *gin.Context) {
+	}, handlers)...)
+	r.POST(fmt.Sprintf("/%s", name), combineHF(func(c *gin.Context) {
 		create(name, api.mgo, c)
-	})
-	r.PUT(fmt.Sprintf("/%s", name), func(c *gin.Context) {
+	}, handlers)...)
+	r.PUT(fmt.Sprintf("/%s", name), combineHF(func(c *gin.Context) {
 		update(name, api.mgo, c)
-	})
-	r.DELETE(fmt.Sprintf("/%s", name), func(c *gin.Context) {
+	}, handlers)...)
+	r.DELETE(fmt.Sprintf("/%s", name), combineHF(func(c *gin.Context) {
 		remove(name, api.mgo, c)
-	})
+	}, handlers)...)
 }

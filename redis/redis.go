@@ -38,12 +38,11 @@ type conf struct {
 
 // New new redis instance
 func New(bulCfg *bulrush.Config) *Redis {
-	cf, err := bulCfg.Unmarshal("redis", conf{})
-	if err != nil {
+	conf := &conf{}
+	if err := bulCfg.Unmarshal("redis", conf); err != nil {
 		panic(err)
 	}
-	conf := cf.(conf)
-	client := createClient(&conf)
+	client := createClient(conf)
 	api := &API{
 		Client: client,
 	}

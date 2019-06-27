@@ -20,10 +20,25 @@ type (
 	// Mongo Type Defined
 	Mongo struct {
 		bulrush.PNBase
-		m       []map[string]interface{}
-		cfg     *Config
-		Session *mgo.Session
-		API     *api
+		m            []map[string]interface{}
+		cfg          *Config
+		Session      *mgo.Session
+		API          *api
+		APIFeature1  *api
+		APIFeature2  *api
+		APIFeature3  *api
+		APIFeature4  *api
+		APIFeature5  *api
+		APIFeature6  *api
+		APIFeature7  *api
+		APIFeature8  *api
+		APIFeature9  *api
+		APIFeature10 *api
+		APIFeature11 *api
+		APIFeature12 *api
+		APIFeature13 *api
+		APIFeature14 *api
+		APIFeature15 *api
 	}
 	// Config defined mgo config
 	Config struct {
@@ -137,7 +152,7 @@ func dialInfo(conf *Config) *mgo.DialInfo {
 }
 
 // obtain mongo connect session
-func openDB(cfg *Config) *mgo.Session {
+func openSession(cfg *Config) *mgo.Session {
 	dial := dialInfo(cfg)
 	session, err := mgo.DialWithInfo(dial)
 	if err != nil {
@@ -149,17 +164,30 @@ func openDB(cfg *Config) *mgo.Session {
 // New New mongo instance
 // Export Session, API and AutoHook
 func New(bulCfg *bulrush.Config) *Mongo {
-	cf, err := bulCfg.Unmarshal("mongo", Config{})
-	if err != nil {
+	conf := &Config{}
+	if err := bulCfg.Unmarshal("mongo", conf); err != nil {
 		panic(err)
 	}
-	conf := cf.(Config)
-	session := openDB(&conf)
+	session := openSession(conf)
 	mgo := &Mongo{}
 	mgo.m = make([]map[string]interface{}, 0)
-	mgo.cfg = &conf
-	mgo.API = &api{}
+	mgo.cfg = conf
 	mgo.Session = session
-	mgo.API.mgo = mgo
+	mgo.API = &api{mgo: mgo}
+	mgo.APIFeature1 = &api{mgo: mgo}
+	mgo.APIFeature2 = &api{mgo: mgo}
+	mgo.APIFeature3 = &api{mgo: mgo}
+	mgo.APIFeature4 = &api{mgo: mgo}
+	mgo.APIFeature5 = &api{mgo: mgo}
+	mgo.APIFeature6 = &api{mgo: mgo}
+	mgo.APIFeature7 = &api{mgo: mgo}
+	mgo.APIFeature8 = &api{mgo: mgo}
+	mgo.APIFeature9 = &api{mgo: mgo}
+	mgo.APIFeature10 = &api{mgo: mgo}
+	mgo.APIFeature11 = &api{mgo: mgo}
+	mgo.APIFeature12 = &api{mgo: mgo}
+	mgo.APIFeature13 = &api{mgo: mgo}
+	mgo.APIFeature14 = &api{mgo: mgo}
+	mgo.APIFeature15 = &api{mgo: mgo}
 	return mgo
 }
