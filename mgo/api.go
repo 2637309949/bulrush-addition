@@ -10,93 +10,242 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// API type defined
-type api struct {
-	mgo *Mongo
+type (
+	// API type defined
+	API struct {
+		mgo  *Mongo
+		Opts *APIOpts
+	}
+	// APIOpts defined api params
+	APIOpts struct {
+		Prefix        string
+		FeaturePrefix string
+		RoutePrefixs  *RoutePrefixs
+		RouteHooks    *RouteHooks
+	}
+	// RoutePrefixs defined route prefixs
+	RoutePrefixs struct {
+		One    func(string) string
+		List   func(string) string
+		Create func(string) string
+		Update func(string) string
+		Delete func(string) string
+	}
+	// RouteHooks defined route hooks
+	RouteHooks struct {
+		One    *OneHookOpts
+		List   *ListHookOpts
+		Create *CreateHookOpts
+		Delete *DeleteHookOpts
+	}
+	// OneHookOpts defined one hook opts
+	OneHookOpts struct {
+		Cond func(map[string]interface{}) map[string]interface{}
+	}
+	// ListHookOpts defined list hook opts
+	ListHookOpts struct {
+	}
+	// CreateHookOpts defined create hook opts
+	CreateHookOpts struct {
+	}
+	// DeleteHookOpts defined delete hook opts
+	DeleteHookOpts struct{}
+)
+
+func (opts *APIOpts) prefix() string {
+	if opts.Prefix == "" {
+		return "/mgo"
+	}
+	return opts.Prefix
+}
+
+func (opts *APIOpts) mergeOpts(upOpts *APIOpts) *APIOpts {
+	return &APIOpts{
+		Prefix:        upOpts.Prefix,
+		FeaturePrefix: upOpts.FeaturePrefix,
+		RoutePrefixs:  upOpts.RoutePrefixs,
+		RouteHooks:    upOpts.RouteHooks,
+	}
+}
+
+func (opts *APIOpts) featurePrefix() string {
+	if opts.FeaturePrefix == "" {
+		return ""
+	}
+	return opts.FeaturePrefix
+}
+
+func (opts *APIOpts) routeHooks() *RouteHooks {
+	if opts.RouteHooks == nil {
+		return &RouteHooks{
+			One:    &OneHookOpts{},
+			List:   &ListHookOpts{},
+			Create: &CreateHookOpts{},
+			Delete: &DeleteHookOpts{},
+		}
+	}
+	return opts.RouteHooks
+}
+
+func (opts *APIOpts) routePrefixs() *RoutePrefixs {
+	if opts.RoutePrefixs == nil {
+		return &RoutePrefixs{
+			One: func(name string) string {
+				return opts.prefix() + opts.featurePrefix() + "/" + name + "/:id"
+			},
+			List: func(name string) string {
+				return opts.prefix() + opts.featurePrefix() + "/" + name
+			},
+			Create: func(name string) string {
+				return opts.prefix() + opts.featurePrefix() + "/" + name
+			},
+			Update: func(name string) string {
+				return opts.prefix() + opts.featurePrefix() + "/" + name
+			},
+			Delete: func(name string) string {
+				return opts.prefix() + opts.featurePrefix() + "/" + name
+			},
+		}
+	}
+	return opts.RoutePrefixs
 }
 
 // Feature defined feature api
-func (ai *api) Feature(name string) *api {
-	feature := &api{mgo: ai.mgo}
+func (ai *API) Feature(name string) *API {
+	feature := &API{mgo: ai.mgo, Opts: &APIOpts{FeaturePrefix: ai.Opts.FeaturePrefix + "/" + name}}
 	return feature
 }
 
 // FeatureWithOpts defined feature api with opts
-func (ai *api) FeatureWithOpts() *api {
-	feature := &api{mgo: ai.mgo}
+func (ai *API) FeatureWithOpts(opts *APIOpts) *API {
+	feature := &API{mgo: ai.mgo, Opts: opts}
 	return feature
 }
 
 // One hook auto generate api
-func (ai *api) One(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
+func (ai *API) One(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
+	profile := ai.mgo.Profile(name)
+	opts := ai.Opts
+	if profile == nil {
+		panic(fmt.Errorf("manifest %s not found", name))
+	}
+	if item, ok := profile["Opts"].(*APIOpts); ok {
+		opts = opts.mergeOpts(item)
+	}
+	routePrefixs := opts.routePrefixs()
 	handler := func(c *gin.Context) {
 		one(name, ai.mgo, c)
 	}
 	h := createHooks(ai.mgo, handler)
 	handlers = append(handlers, h.R)
-	r.GET(fmt.Sprintf("/%s/:id", name), handlers...)
+	r.GET(routePrefixs.One(name), handlers...)
 	return h
 }
 
 // List hook auto generate api
-func (ai *api) List(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
+func (ai *API) List(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
+	profile := ai.mgo.Profile(name)
+	opts := ai.Opts
+	if profile == nil {
+		panic(fmt.Errorf("manifest %s not found", name))
+	}
+	if item, ok := profile["Opts"].(*APIOpts); ok {
+		opts = opts.mergeOpts(item)
+	}
+	routePrefixs := opts.routePrefixs()
 	handler := func(c *gin.Context) {
 		list(name, ai.mgo, c)
 	}
 	h := createHooks(ai.mgo, handler)
 	handlers = append(handlers, h.R)
-	r.GET(fmt.Sprintf("/%s", name), handlers...)
+	r.GET(routePrefixs.List(name), handlers...)
 	return h
 }
 
 // Create hook auto generate api
-func (ai *api) Create(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
+func (ai *API) Create(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
+	profile := ai.mgo.Profile(name)
+	opts := ai.Opts
+	if profile == nil {
+		panic(fmt.Errorf("manifest %s not found", name))
+	}
+	if item, ok := profile["Opts"].(*APIOpts); ok {
+		opts = opts.mergeOpts(item)
+	}
+	routePrefixs := opts.routePrefixs()
 	handler := func(c *gin.Context) {
 		create(name, ai.mgo, c)
 	}
 	h := createHooks(ai.mgo, handler)
 	handlers = append(handlers, h.R)
-	r.POST(fmt.Sprintf("/%s", name), handlers...)
+	r.POST(routePrefixs.Create(name), handlers...)
 	return h
 }
 
 // Update hook auto generate api
-func (ai *api) Update(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
+func (ai *API) Update(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
+	profile := ai.mgo.Profile(name)
+	opts := ai.Opts
+	if profile == nil {
+		panic(fmt.Errorf("manifest %s not found", name))
+	}
+	if item, ok := profile["Opts"].(*APIOpts); ok {
+		opts = opts.mergeOpts(item)
+	}
+	routePrefixs := opts.routePrefixs()
 	handler := func(c *gin.Context) {
 		update(name, ai.mgo, c)
 	}
 	h := createHooks(ai.mgo, handler)
 	handlers = append(handlers, h.R)
-	r.PUT(fmt.Sprintf("/%s", name), handlers...)
+	r.PUT(routePrefixs.Update(name), handlers...)
 	return h
 }
 
 // Delete hook auto generate api
-func (ai *api) Delete(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
+func (ai *API) Delete(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) *Hook {
+	profile := ai.mgo.Profile(name)
+	opts := ai.Opts
+	if profile == nil {
+		panic(fmt.Errorf("manifest %s not found", name))
+	}
+	if item, ok := profile["Opts"].(*APIOpts); ok {
+		opts = opts.mergeOpts(item)
+	}
+	routePrefixs := opts.routePrefixs()
 	handler := func(c *gin.Context) {
 		remove(name, ai.mgo, c)
 	}
 	h := createHooks(ai.mgo, handler)
 	handlers = append(handlers, h.R)
-	r.DELETE(fmt.Sprintf("/%s", name), handlers...)
+	r.DELETE(routePrefixs.Delete(name), handlers...)
 	return h
 }
 
 // ALL hook auto generate api
-func (ai *api) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) {
-	r.GET(fmt.Sprintf("/%s", name), combineHF(func(c *gin.Context) {
-		list(name, ai.mgo, c)
-	}, handlers)...)
-	r.GET(fmt.Sprintf("/%s/:id", name), combineHF(func(c *gin.Context) {
+func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc) {
+	profile := ai.mgo.Profile(name)
+	opts := ai.Opts
+	if profile == nil {
+		panic(fmt.Errorf("manifest %s not found", name))
+	}
+	if item, ok := profile["Opts"].(*APIOpts); ok {
+		opts = opts.mergeOpts(item)
+	}
+	routePrefixs := opts.routePrefixs()
+	r.GET(routePrefixs.One(name), func(c *gin.Context) {
 		one(name, ai.mgo, c)
-	}, handlers)...)
-	r.POST(fmt.Sprintf("/%s", name), combineHF(func(c *gin.Context) {
+	})
+	r.GET(routePrefixs.List(name), func(c *gin.Context) {
+		list(name, ai.mgo, c)
+	})
+	r.POST(routePrefixs.Create(name), func(c *gin.Context) {
 		create(name, ai.mgo, c)
-	}, handlers)...)
-	r.PUT(fmt.Sprintf("/%s", name), combineHF(func(c *gin.Context) {
+	})
+	r.PUT(routePrefixs.Update(name), func(c *gin.Context) {
 		update(name, ai.mgo, c)
-	}, handlers)...)
-	r.DELETE(fmt.Sprintf("/%s", name), combineHF(func(c *gin.Context) {
+	})
+	r.DELETE(routePrefixs.Delete(name), func(c *gin.Context) {
 		remove(name, ai.mgo, c)
-	}, handlers)...)
+	})
 }

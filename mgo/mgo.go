@@ -20,25 +20,10 @@ type (
 	// Mongo Type Defined
 	Mongo struct {
 		bulrush.PNBase
-		m            []map[string]interface{}
-		cfg          *Config
-		Session      *mgo.Session
-		API          *api
-		APIFeature1  *api
-		APIFeature2  *api
-		APIFeature3  *api
-		APIFeature4  *api
-		APIFeature5  *api
-		APIFeature6  *api
-		APIFeature7  *api
-		APIFeature8  *api
-		APIFeature9  *api
-		APIFeature10 *api
-		APIFeature11 *api
-		APIFeature12 *api
-		APIFeature13 *api
-		APIFeature14 *api
-		APIFeature15 *api
+		m       []map[string]interface{}
+		cfg     *Config
+		Session *mgo.Session
+		API     *API
 	}
 	// Config defined mgo config
 	Config struct {
@@ -88,12 +73,22 @@ func (mgo *Mongo) Register(manifest map[string]interface{}) {
 	mgo.m = append(mgo.m, manifest)
 }
 
-// Vars return array of Var
-func (mgo *Mongo) Vars(name string) interface{} {
+// Profile model profile
+func (mgo *Mongo) Profile(name string) map[string]interface{} {
 	m := funk.Find(mgo.m, func(item map[string]interface{}) bool {
 		flag := item["name"].(string) == name
 		return flag
-	}).(map[string]interface{})
+	})
+	if m != nil {
+		profile := m.(map[string]interface{})
+		return profile
+	}
+	return nil
+}
+
+// Vars return array of Var
+func (mgo *Mongo) Vars(name string) interface{} {
+	m := mgo.Profile(name)
 	if m != nil {
 		return addition.CreateSlice(addition.LeftOkV(m["reflector"]))
 	}
@@ -103,9 +98,7 @@ func (mgo *Mongo) Vars(name string) interface{} {
 // Var return  Var
 // reflect from reflector entity
 func (mgo *Mongo) Var(name string) interface{} {
-	m := funk.Find(mgo.m, func(item map[string]interface{}) bool {
-		return item["name"].(string) == name
-	}).(map[string]interface{})
+	m := mgo.Profile(name)
 	if m != nil {
 		return addition.CreateObject(addition.LeftOkV(m["reflector"]))
 	}
@@ -173,6 +166,6 @@ func New(bulCfg *bulrush.Config) *Mongo {
 	mgo.m = make([]map[string]interface{}, 0)
 	mgo.cfg = conf
 	mgo.Session = session
-	mgo.API = &api{mgo: mgo}
+	mgo.API = &API{mgo: mgo, Opts: &APIOpts{}}
 	return mgo
 }
