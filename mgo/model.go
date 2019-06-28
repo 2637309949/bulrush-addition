@@ -4,7 +4,7 @@
 
 package mgoext
 
-// Base common fields
+// Model common fields
 type Model struct {
 	Created  int `bson:"_created" form:"_created" json:"_created" xml:"_created"`
 	Modified int `bson:"_modified" form:"_modified" json:"_modified" xml:"_modified"`
