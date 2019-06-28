@@ -63,7 +63,7 @@ func (mgo *Mongo) Plugin() bulrush.PNRet {
 
 // Register model
 // should provide name and reflector paramters
-func (mgo *Mongo) Register(manifest map[string]interface{}) {
+func (mgo *Mongo) Register(manifest map[string]interface{}) *Mongo {
 	if _, ok := manifest["name"]; !ok {
 		panic(errors.New("name params must be provided"))
 	}
@@ -71,6 +71,7 @@ func (mgo *Mongo) Register(manifest map[string]interface{}) {
 		panic(errors.New("reflector params must be provided"))
 	}
 	mgo.m = append(mgo.m, manifest)
+	return mgo
 }
 
 // Profile model profile

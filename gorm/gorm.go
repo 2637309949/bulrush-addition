@@ -46,7 +46,7 @@ func (gorm *GORM) Plugin() bulrush.PNRet {
 
 // Register model
 // should provide name and reflector paramters
-func (gorm *GORM) Register(manifest map[string]interface{}) {
+func (gorm *GORM) Register(manifest map[string]interface{}) *GORM {
 	if _, ok := manifest["name"]; !ok {
 		panic(errors.New("name params must be provided"))
 	}
@@ -54,6 +54,7 @@ func (gorm *GORM) Register(manifest map[string]interface{}) {
 		panic(errors.New("reflector params must be provided"))
 	}
 	gorm.m = append(gorm.m, manifest)
+	return gorm
 }
 
 // Profile model profile
