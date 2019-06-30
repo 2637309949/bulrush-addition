@@ -123,7 +123,7 @@ func toLevelString(level LOGLEVEL) string {
 	return string(level)
 }
 
-func toColorString(level LOGLEVEL, text string) string {
+func toColorLevel(level LOGLEVEL, text string) string {
 	switch level {
 	case ERRORLevel:
 		return Red(text)
