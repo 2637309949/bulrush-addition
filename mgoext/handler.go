@@ -20,12 +20,6 @@ type form struct {
 	Category interface{}              `form:"category" json:"category" xml:"category" `
 }
 
-type puFormat struct {
-	Cond map[string]interface{} `bson:"cond" form:"cond" json:"cond" xml:"cond"`
-	Muti bool                   `bson:"muti" form:"muti" json:"muti" xml:"muti"`
-	Doc  interface{}            `bson:"doc" form:"doc" json:"doc" xml:"doc" `
-}
-
 func one(name string, mgo *Mongo, c *gin.Context) {
 	id := c.Param("id")
 	Model := mgo.Model(name)
