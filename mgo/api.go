@@ -14,10 +14,10 @@ type (
 	// API type defined
 	API struct {
 		mgo  *Mongo
-		Opts *APIOpts
+		Opts *Opts
 	}
-	// APIOpts defined api params
-	APIOpts struct {
+	// Opts defined api params
+	Opts struct {
 		Prefix        string
 		FeaturePrefix string
 		RoutePrefixs  *RoutePrefixs
@@ -52,15 +52,15 @@ type (
 	DeleteHookOpts struct{}
 )
 
-func (opts *APIOpts) prefix() string {
+func (opts *Opts) prefix() string {
 	if opts.Prefix == "" {
 		return "/mgo"
 	}
 	return opts.Prefix
 }
 
-func (opts *APIOpts) mergeOpts(upOpts *APIOpts) *APIOpts {
-	return &APIOpts{
+func (opts *Opts) mergeOpts(upOpts *Opts) *Opts {
+	return &Opts{
 		Prefix:        upOpts.Prefix,
 		FeaturePrefix: upOpts.FeaturePrefix,
 		RoutePrefixs:  upOpts.RoutePrefixs,
@@ -68,14 +68,14 @@ func (opts *APIOpts) mergeOpts(upOpts *APIOpts) *APIOpts {
 	}
 }
 
-func (opts *APIOpts) featurePrefix() string {
+func (opts *Opts) featurePrefix() string {
 	if opts.FeaturePrefix == "" {
 		return ""
 	}
 	return opts.FeaturePrefix
 }
 
-func (opts *APIOpts) routeHooks() *RouteHooks {
+func (opts *Opts) routeHooks() *RouteHooks {
 	if opts.RouteHooks == nil {
 		return &RouteHooks{
 			One:    &OneHookOpts{},
@@ -87,7 +87,7 @@ func (opts *APIOpts) routeHooks() *RouteHooks {
 	return opts.RouteHooks
 }
 
-func (opts *APIOpts) routePrefixs() *RoutePrefixs {
+func (opts *Opts) routePrefixs() *RoutePrefixs {
 	if opts.RoutePrefixs == nil {
 		return &RoutePrefixs{
 			One: func(name string) string {
@@ -112,12 +112,12 @@ func (opts *APIOpts) routePrefixs() *RoutePrefixs {
 
 // Feature defined feature api
 func (ai *API) Feature(name string) *API {
-	feature := &API{mgo: ai.mgo, Opts: &APIOpts{FeaturePrefix: ai.Opts.FeaturePrefix + "/" + name}}
+	feature := &API{mgo: ai.mgo, Opts: &Opts{FeaturePrefix: ai.Opts.FeaturePrefix + "/" + name}}
 	return feature
 }
 
 // FeatureWithOpts defined feature api with opts
-func (ai *API) FeatureWithOpts(opts *APIOpts) *API {
+func (ai *API) FeatureWithOpts(opts *Opts) *API {
 	feature := &API{mgo: ai.mgo, Opts: opts}
 	return feature
 }

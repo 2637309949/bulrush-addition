@@ -36,7 +36,7 @@ type (
 		Name      string
 		Reflector interface{}
 		BanHook   bool
-		Opts      *APIOpts
+		Opts      *Opts
 	}
 )
 
@@ -66,12 +66,10 @@ func (gorm *GORM) Register(profile *Profile) *GORM {
 
 // Profile model profile
 func (gorm *GORM) Profile(name string) *Profile {
-	m := funk.Find(gorm.m, func(profile *Profile) bool {
+	if m := funk.Find(gorm.m, func(profile *Profile) bool {
 		return profile.Name == name
-	})
-	if m != nil {
-		profile := m.(*Profile)
-		return profile
+	}); m != nil {
+		return m.(*Profile)
 	}
 	return nil
 }
@@ -116,6 +114,6 @@ func New(bulCfg *bulrush.Config) *GORM {
 	gorm.m = make([]*Profile, 0)
 	gorm.cfg = conf
 	gorm.DB = db
-	gorm.API = &API{gorm: gorm, Opts: &APIOpts{}}
+	gorm.API = &API{gorm: gorm, Opts: &Opts{}}
 	return gorm
 }

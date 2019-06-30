@@ -49,11 +49,12 @@ type (
 	}
 	// Profile defined model profile
 	Profile struct {
-		DB        string
-		Name      string
-		Reflector interface{}
-		BanHook   bool
-		Opts      *APIOpts
+		DB         string
+		Collection string
+		Name       string
+		Reflector  interface{}
+		BanHook    bool
+		Opts       *Opts
 	}
 )
 
@@ -83,12 +84,10 @@ func (mgo *Mongo) Register(manifest *Profile) *Mongo {
 
 // Profile model profile
 func (mgo *Mongo) Profile(name string) *Profile {
-	m := funk.Find(mgo.m, func(item *Profile) bool {
+	if m := funk.Find(mgo.m, func(item *Profile) bool {
 		return item.Name == name
-	})
-	if m != nil {
-		profile := m.(*Profile)
-		return profile
+	}); m != nil {
+		return m.(*Profile)
 	}
 	return nil
 }
@@ -115,12 +114,10 @@ func (mgo *Mongo) Var(name string) interface{} {
 // Model return instance
 // throw error if not exists these model
 func (mgo *Mongo) Model(name string) *mgo.Collection {
-	m := funk.Find(mgo.m, func(item *Profile) bool {
-		return item.Name == name
-	}).(map[string]interface{})
+	m := mgo.Profile(name)
 	if m != nil {
-		db := addition.Some(m["db"], mgo.cfg.Database).(string)
-		collect := addition.Some(m["collection"], name).(string)
+		db := addition.Some(m.DB, mgo.cfg.Database).(string)
+		collect := addition.Some(m.Collection, name).(string)
 		return mgo.Session.DB(db).C(collect)
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
@@ -173,6 +170,6 @@ func New(bulCfg *bulrush.Config) *Mongo {
 	mgo.m = make([]*Profile, 0)
 	mgo.cfg = conf
 	mgo.Session = session
-	mgo.API = &API{mgo: mgo, Opts: &APIOpts{}}
+	mgo.API = &API{mgo: mgo, Opts: &Opts{}}
 	return mgo
 }
