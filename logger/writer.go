@@ -12,7 +12,7 @@ import (
 // LevelWriter defined level writer
 type LevelWriter struct {
 	W     io.Writer
-	Level LOGLEVEL
+	Level LEVEL
 }
 
 func (c *LevelWriter) Write(p []byte) (int, error) {
@@ -25,7 +25,7 @@ func (c *LevelWriter) Write(p []byte) (int, error) {
 // MutiWriter write with level
 type MutiWriter struct {
 	writers []io.Writer
-	Level   LOGLEVEL
+	Level   LEVEL
 }
 
 func (t *MutiWriter) Write(p []byte) (n int, err error) {

@@ -23,26 +23,26 @@ func initLogger() {
 		transports = []*logger.Transport{
 			&logger.Transport{
 				Dirname: path.Join(path.Join(".", BLOGPATH), "error"),
-				Level:   logger.ERRORLevel,
+				Level:   logger.ERROR,
 				Maxsize: logger.Maxsize,
 			},
 			&logger.Transport{
 				Dirname: path.Join(path.Join(".", BLOGPATH), "combined"),
-				Level:   logger.SILLYLevel,
+				Level:   logger.SILLY,
 				Maxsize: logger.Maxsize,
 			},
 			&logger.Transport{
-				Level: logger.SILLYLevel,
+				Level: logger.SILLY,
 			},
 		}
 	} else {
 		transports = []*logger.Transport{
 			&logger.Transport{
-				Level: logger.SILLYLevel,
+				Level: logger.SILLY,
 			},
 		}
 	}
-	RushLogger = logger.CreateLogger(logger.SILLYLevel, nil, transports)
+	RushLogger = logger.CreateLogger(logger.SILLY, nil, transports)
 }
 
 // initLogger

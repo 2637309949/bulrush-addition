@@ -103,41 +103,41 @@ func MagentaBold(message string) string {
 	return fmt.Sprintf("\x1b[35m%s\x1b[0m", Bold(message))
 }
 
-func toLevelString(level LOGLEVEL) string {
+func toLevelString(level LEVEL) string {
 	switch level {
-	case ERRORLevel:
+	case ERROR:
 		return "ERROR"
-	case WARNLevel:
+	case WARN:
 		return "WARN"
-	case INFOLevel:
+	case INFO:
 		return "INFO"
-	case VERBOSELevel:
+	case VERBOSE:
 		return "VERBOSE"
-	case DEBUGLevel:
+	case DEBUG:
 		return "DEBUG"
-	case SILLYLevel:
+	case SILLY:
 		return "SILLY"
-	case HTTPLevel:
+	case HTTP:
 		return "HTTP"
 	}
 	return string(level)
 }
 
-func toColorLevel(level LOGLEVEL, text string) string {
+func toColorLevel(level LEVEL, text string) string {
 	switch level {
-	case ERRORLevel:
+	case ERROR:
 		return Red(text)
-	case WARNLevel:
+	case WARN:
 		return Yellow(text)
-	case INFOLevel:
+	case INFO:
 		return White(text)
-	case VERBOSELevel:
+	case VERBOSE:
 		return Yellow(text)
-	case DEBUGLevel:
+	case DEBUG:
 		return Blue(text)
-	case SILLYLevel:
+	case SILLY:
 		return Cyan(text)
-	case HTTPLevel:
+	case HTTP:
 		return Green(text)
 	default:
 		return text

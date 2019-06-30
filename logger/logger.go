@@ -12,61 +12,62 @@ import (
 )
 
 type (
-	// LOGLEVEL level tags
-	LOGLEVEL int
+	// LEVEL level tags
+	LEVEL int
 	// FormatFunc log format
 	FormatFunc func(map[string]string) string
 	// Transport for Journal
 	Transport struct {
 		Type    string
 		Dirname string
-		Level   LOGLEVEL
+		Level   LEVEL
 		Maxsize int64
 	}
 	// Journal logger
 	Journal struct {
-		level   LOGLEVEL
+		level   LEVEL
 		format  FormatFunc
 		writers []struct {
-			l LOGLEVEL
+			l LEVEL
 			w *MutiWriter
 		}
 		transports []*Transport
 	}
 )
 
+// Maxsize file size
+const Maxsize = 1024 * 1024 * 10
+
 const (
-	// Maxsize file size
-	Maxsize = 1024 * 1024 * 10
-	// ERRORLevel level
-	ERRORLevel LOGLEVEL = 1
-	// WARNLevel level
-	WARNLevel LOGLEVEL = 2
-	// INFOLevel level
-	INFOLevel LOGLEVEL = 3
-	// VERBOSELevel level
-	VERBOSELevel LOGLEVEL = 4
-	// DEBUGLevel level
-	DEBUGLevel LOGLEVEL = 5
-	// SILLYLevel level
-	SILLYLevel LOGLEVEL = 6
-	// HTTPLevel level
-	HTTPLevel LOGLEVEL = 7
+	// ERROR level
+	ERROR LEVEL = iota + 1
+	// WARN level
+	WARN
+	// INFO level
+	INFO
+	// VERBOSE level
+	VERBOSE
+	// DEBUG level
+	DEBUG
+	// SILLY level
+	SILLY
+	// HTTP level
+	HTTP
 )
 
 // Error level
 func (j *Journal) Error(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x struct {
-		l LOGLEVEL
+		l LEVEL
 		w *MutiWriter
 	}) bool {
-		return x.l == ERRORLevel
+		return x.l == ERROR
 	}).(struct {
-		l LOGLEVEL
+		l LEVEL
 		w *MutiWriter
 	})
 	if r.w != nil {
-		r.w.Level = ERRORLevel
+		r.w.Level = ERROR
 		j.fprintf(r.w, format, a...)
 	}
 }
@@ -74,16 +75,16 @@ func (j *Journal) Error(format string, a ...interface{}) {
 // Warn level
 func (j *Journal) Warn(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x struct {
-		l LOGLEVEL
+		l LEVEL
 		w *MutiWriter
 	}) bool {
-		return x.l == WARNLevel
+		return x.l == WARN
 	}).(struct {
-		l LOGLEVEL
+		l LEVEL
 		w *MutiWriter
 	})
 	if r.w != nil {
-		r.w.Level = WARNLevel
+		r.w.Level = WARN
 		j.fprintf(r.w, format, a...)
 	}
 }
@@ -92,15 +93,15 @@ func (j *Journal) Warn(format string, a ...interface{}) {
 func (j *Journal) Info(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x interface{}) bool {
 		return x.(struct {
-			l LOGLEVEL
+			l LEVEL
 			w *MutiWriter
-		}).l == INFOLevel
+		}).l == INFO
 	}).(struct {
-		l LOGLEVEL
+		l LEVEL
 		w *MutiWriter
 	})
 	if r.w != nil {
-		r.w.Level = INFOLevel
+		r.w.Level = INFO
 		j.fprintf(r.w, format, a...)
 	}
 }
@@ -108,16 +109,16 @@ func (j *Journal) Info(format string, a ...interface{}) {
 // Verbose level
 func (j *Journal) Verbose(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x struct {
-		l LOGLEVEL
+		l LEVEL
 		w *MutiWriter
 	}) bool {
-		return x.l == VERBOSELevel
+		return x.l == VERBOSE
 	}).(struct {
-		l LOGLEVEL
+		l LEVEL
 		w *MutiWriter
 	})
 	if r.w != nil {
-		r.w.Level = VERBOSELevel
+		r.w.Level = VERBOSE
 		j.fprintf(r.w, format, a...)
 	}
 }
@@ -125,16 +126,16 @@ func (j *Journal) Verbose(format string, a ...interface{}) {
 // Debug level
 func (j *Journal) Debug(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x struct {
-		l LOGLEVEL
+		l LEVEL
 		w *MutiWriter
 	}) bool {
-		return x.l == DEBUGLevel
+		return x.l == DEBUG
 	}).(struct {
-		l LOGLEVEL
+		l LEVEL
 		w *MutiWriter
 	})
 	if r.w != nil {
-		r.w.Level = DEBUGLevel
+		r.w.Level = DEBUG
 		j.fprintf(r.w, format, a...)
 	}
 }
@@ -142,16 +143,16 @@ func (j *Journal) Debug(format string, a ...interface{}) {
 // Silly level
 func (j *Journal) Silly(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x struct {
-		l LOGLEVEL
+		l LEVEL
 		w *MutiWriter
 	}) bool {
-		return x.l == SILLYLevel
+		return x.l == SILLY
 	}).(struct {
-		l LOGLEVEL
+		l LEVEL
 		w *MutiWriter
 	})
 	if r.w != nil {
-		r.w.Level = SILLYLevel
+		r.w.Level = SILLY
 		j.fprintf(r.w, format, a...)
 	}
 }
@@ -159,16 +160,16 @@ func (j *Journal) Silly(format string, a ...interface{}) {
 // HTTP level
 func (j *Journal) HTTP(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x struct {
-		l LOGLEVEL
+		l LEVEL
 		w *MutiWriter
 	}) bool {
-		return x.l == HTTPLevel
+		return x.l == HTTP
 	}).(struct {
-		l LOGLEVEL
+		l LEVEL
 		w *MutiWriter
 	})
 	if r.w != nil {
-		r.w.Level = HTTPLevel
+		r.w.Level = HTTP
 		j.fprintf(r.w, format, a...)
 	}
 }
@@ -178,7 +179,7 @@ func (j *Journal) fprintf(w *MutiWriter, format string, a ...interface{}) {
 }
 
 // create writer
-func (j *Journal) createWriter(level LOGLEVEL) *MutiWriter {
+func (j *Journal) createWriter(level LEVEL) *MutiWriter {
 	var writer *MutiWriter
 	if j.level >= level {
 		for _, transport := range j.transports {
@@ -212,11 +213,11 @@ func (j *Journal) createWriter(level LOGLEVEL) *MutiWriter {
 }
 
 // CreateLogger logger
-func CreateLogger(level LOGLEVEL, format FormatFunc, transports []*Transport) *Journal {
+func CreateLogger(level LEVEL, format FormatFunc, transports []*Transport) *Journal {
 	j := &Journal{}
 	for _, transport := range transports {
 		if transport.Level == 0 {
-			transport.Level = INFOLevel
+			transport.Level = INFO
 		}
 		if transport.Dirname == "" {
 			transport.Type = "Print"
@@ -227,10 +228,10 @@ func CreateLogger(level LOGLEVEL, format FormatFunc, transports []*Transport) *J
 	j.format = format
 	j.level = level
 	j.transports = transports
-	levels := []LOGLEVEL{ERRORLevel, WARNLevel, INFOLevel, VERBOSELevel, DEBUGLevel, SILLYLevel, HTTPLevel}
+	levels := []LEVEL{ERROR, WARN, INFO, VERBOSE, DEBUG, SILLY, HTTP}
 	for _, level := range levels {
 		writer := struct {
-			l LOGLEVEL
+			l LEVEL
 			w *MutiWriter
 		}{
 			l: level,
