@@ -1,6 +1,88 @@
-# bulrush-addition
-Provides cross-module references.  
+## bulrush-addition
+	Provides cross-module references.  
 
+### mgo
+```go
+var MGOExt = mgoext.New(conf.Cfg)
+```
+
+```go
+app.PostUse(addition.MGOExt)
+```
+
+```go
+type User struct {
+	Base     `bson:",inline"`
+	Name     string          `bson:"name" form:"name" json:"name" xml:"name"`
+	Password string          `bson:"password" form:"password" json:"password" xml:"password" `
+	Age      int             `bson:"age" form:"age" json:"age" xml:"age"`
+	Roles    []bson.ObjectId `ref:"role" bson:"roles" form:"roles" json:"roles" xml:"roles" `
+}
+
+var _ = addition.MGOExt.Register(&mgoext.Profile{
+	DB:        "test",
+	Name:      "user",
+	Reflector: &User{},
+	BanHook:   true,
+})
+
+// RegisterUser inject function
+func RegisterUser(r *gin.RouterGroup) {
+	addition.MGOExt.API.List(r, "user").Pre(func(c *gin.Context) {
+		addition.Logger.Info("before")
+	}).Post(func(c *gin.Context) {
+		addition.Logger.Info("after")
+	}).Auth(func(c *gin.Context) bool {
+		return true
+	})
+	addition.MGOExt.API.Feature("feature").List(r, "user")
+	addition.MGOExt.API.One(r, "user")
+	addition.MGOExt.API.Create(r, "user")
+	addition.MGOExt.API.Update(r, "user")
+	addition.MGOExt.API.Delete(r, "user")
+}
+```
+
+### gorm
+```go
+var GORMExt = gormext.New(conf.Cfg)
+var _ = GORMExt.DB.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8mb4")
+```
+
+```go
+app.PostUse(addition.GORMExt)
+```
+
+```go
+type User struct {
+	Base
+	Name string `form:"name" json:"name" xml:"name"`
+	Age  uint   `form:"age" json:"age" xml:"age"`
+}
+
+var _ = addition.GORMExt.Register(&gormext.Profile{
+	DB:        "test",
+	Name:      "user",
+	Reflector: &User{},
+	BanHook:   true,
+})
+
+// RegisterUser inject function
+func RegisterUser(r *gin.RouterGroup) {
+	addition.GORMExt.API.List(r, "user").Pre(func(c *gin.Context) {
+		addition.Logger.Info("before")
+	}).Post(func(c *gin.Context) {
+		addition.Logger.Info("after")
+	}).Auth(func(c *gin.Context) bool {
+		return true
+	})
+	addition.GORMExt.API.Feature("subUser").List(r, "user")
+	addition.GORMExt.API.One(r, "user")
+	addition.GORMExt.API.Create(r, "user")
+	addition.GORMExt.API.Update(r, "user")
+	addition.GORMExt.API.Delete(r, "user")
+}
+```
 ### logger
 ```
 logDir := path.Join(".", utils.Some(conf.Cfg.Log.Path, "logs").(string))
@@ -29,32 +111,7 @@ logger := logger.CreateLogger(
 )
 logger.Info("after")
 ```
-### mongo
-```go
-mongo := mongo.New(conf.Cfg)
-func AddUsers(users []interface{}) {
-	User:= mongo.Model("user")
-	err := User.Insert(users...)
-	if err != nil {
-		panic(err)
-	}
-}
-// RegisterUser genrate user routers
-func RegisterUser(r *gin.RouterGroup) {
-	mongo.API.List(r, "user").Pre(func(c *gin.Context) {
-		fmt.Println("before")
-	}).Post(func(c *gin.Context) {
-		fmt.Println("after")
-	})
-	mongo.API.One(r, "user")
-	mongo.API.Create(r, "user")
-	mongo.API.Update(r, "user")
-	mongo.API.Delete(r, "user")
-}
-app.Use(Model, Route)
-// Open model autoHook
-app.Use(mongo.AutoHook)
-```
+
 ### redis
 ```go
 redis := redis.New(conf.Cfg)
