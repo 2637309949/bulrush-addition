@@ -160,11 +160,7 @@ func openSession(cfg *Config) *mgo.Session {
 
 // New New mongo instance
 // Export Session, API and AutoHook
-func New(bulCfg *bulrush.Config) *Mongo {
-	conf := &Config{}
-	if err := bulCfg.Unmarshal("mongo", conf); err != nil {
-		panic(err)
-	}
+func New(conf *Config) *Mongo {
 	session := openSession(conf)
 	mgo := &Mongo{}
 	mgo.m = make([]*Profile, 0)

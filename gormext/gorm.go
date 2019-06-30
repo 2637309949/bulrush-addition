@@ -104,11 +104,7 @@ func openSession(cfg *Config) *jzgorm.DB {
 
 // New New mongo instance
 // Export Session, API and AutoHook
-func New(bulCfg *bulrush.Config) *GORM {
-	conf := &Config{}
-	if err := bulCfg.Unmarshal("sql", conf); err != nil {
-		panic(err)
-	}
+func New(conf *Config) *GORM {
 	db := openSession(conf)
 	gorm := &GORM{}
 	gorm.m = make([]*Profile, 0)
