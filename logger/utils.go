@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-package color
+package logger
 
 import (
 	"fmt"
@@ -101,4 +101,45 @@ func GrayBold(message string) string {
 // MagentaBold returns a magenta Bold string
 func MagentaBold(message string) string {
 	return fmt.Sprintf("\x1b[35m%s\x1b[0m", Bold(message))
+}
+
+func toLevelString(level LOGLEVEL) string {
+	switch level {
+	case ERRORLevel:
+		return "ERROR"
+	case WARNLevel:
+		return "WARN"
+	case INFOLevel:
+		return "INFO"
+	case VERBOSELevel:
+		return "VERBOSE"
+	case DEBUGLevel:
+		return "DEBUG"
+	case SILLYLevel:
+		return "SILLY"
+	case HTTPLevel:
+		return "HTTP"
+	}
+	return string(level)
+}
+
+func toColorString(level LOGLEVEL, text string) string {
+	switch level {
+	case ERRORLevel:
+		return Red(text)
+	case WARNLevel:
+		return Yellow(text)
+	case INFOLevel:
+		return White(text)
+	case VERBOSELevel:
+		return Yellow(text)
+	case DEBUGLevel:
+		return Blue(text)
+	case SILLYLevel:
+		return Cyan(text)
+	case HTTPLevel:
+		return Green(text)
+	default:
+		return text
+	}
 }

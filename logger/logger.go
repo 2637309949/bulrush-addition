@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/2637309949/bulrush-addition/logger/color"
-
 	"github.com/thoas/go-funk"
 )
 
@@ -31,7 +29,7 @@ type (
 		format  FormatFunc
 		writers []struct {
 			l LOGLEVEL
-			w *LevelWriter
+			w *MutiWriter
 		}
 		transports []*Transport
 	}
@@ -60,12 +58,12 @@ const (
 func (j *Journal) Error(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x struct {
 		l LOGLEVEL
-		w *LevelWriter
+		w *MutiWriter
 	}) bool {
 		return x.l == ERRORLevel
 	}).(struct {
 		l LOGLEVEL
-		w *LevelWriter
+		w *MutiWriter
 	})
 	if r.w != nil {
 		r.w.Level = ERRORLevel
@@ -77,12 +75,12 @@ func (j *Journal) Error(format string, a ...interface{}) {
 func (j *Journal) Warn(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x struct {
 		l LOGLEVEL
-		w *LevelWriter
+		w *MutiWriter
 	}) bool {
 		return x.l == WARNLevel
 	}).(struct {
 		l LOGLEVEL
-		w *LevelWriter
+		w *MutiWriter
 	})
 	if r.w != nil {
 		r.w.Level = WARNLevel
@@ -95,11 +93,11 @@ func (j *Journal) Info(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x interface{}) bool {
 		return x.(struct {
 			l LOGLEVEL
-			w *LevelWriter
+			w *MutiWriter
 		}).l == INFOLevel
 	}).(struct {
 		l LOGLEVEL
-		w *LevelWriter
+		w *MutiWriter
 	})
 	if r.w != nil {
 		r.w.Level = INFOLevel
@@ -111,12 +109,12 @@ func (j *Journal) Info(format string, a ...interface{}) {
 func (j *Journal) Verbose(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x struct {
 		l LOGLEVEL
-		w *LevelWriter
+		w *MutiWriter
 	}) bool {
 		return x.l == VERBOSELevel
 	}).(struct {
 		l LOGLEVEL
-		w *LevelWriter
+		w *MutiWriter
 	})
 	if r.w != nil {
 		r.w.Level = VERBOSELevel
@@ -128,12 +126,12 @@ func (j *Journal) Verbose(format string, a ...interface{}) {
 func (j *Journal) Debug(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x struct {
 		l LOGLEVEL
-		w *LevelWriter
+		w *MutiWriter
 	}) bool {
 		return x.l == DEBUGLevel
 	}).(struct {
 		l LOGLEVEL
-		w *LevelWriter
+		w *MutiWriter
 	})
 	if r.w != nil {
 		r.w.Level = DEBUGLevel
@@ -145,12 +143,12 @@ func (j *Journal) Debug(format string, a ...interface{}) {
 func (j *Journal) Silly(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x struct {
 		l LOGLEVEL
-		w *LevelWriter
+		w *MutiWriter
 	}) bool {
 		return x.l == SILLYLevel
 	}).(struct {
 		l LOGLEVEL
-		w *LevelWriter
+		w *MutiWriter
 	})
 	if r.w != nil {
 		r.w.Level = SILLYLevel
@@ -162,12 +160,12 @@ func (j *Journal) Silly(format string, a ...interface{}) {
 func (j *Journal) HTTP(format string, a ...interface{}) {
 	var r = funk.Find(j.writers, func(x struct {
 		l LOGLEVEL
-		w *LevelWriter
+		w *MutiWriter
 	}) bool {
 		return x.l == HTTPLevel
 	}).(struct {
 		l LOGLEVEL
-		w *LevelWriter
+		w *MutiWriter
 	})
 	if r.w != nil {
 		r.w.Level = HTTPLevel
@@ -175,26 +173,26 @@ func (j *Journal) HTTP(format string, a ...interface{}) {
 	}
 }
 
-func (j *Journal) fprintf(w *LevelWriter, format string, a ...interface{}) {
+func (j *Journal) fprintf(w *MutiWriter, format string, a ...interface{}) {
 	fmt.Fprintf(w, format, a...)
 }
 
 // create writer
-func (j *Journal) createWriter(level LOGLEVEL) *LevelWriter {
-	var writer *LevelWriter
+func (j *Journal) createWriter(level LOGLEVEL) *MutiWriter {
+	var writer *MutiWriter
 	if j.level >= level {
 		for _, transport := range j.transports {
 			if transport.Level >= level {
 				if transport.Type == "Print" {
 					if writer != nil {
-						writer = multiLevelWriter(writer, &color.Writer{
+						writer = multiLevelWriter(writer, &LevelWriter{
 							W:     os.Stdout,
-							Level: color.LOGLEVEL(transport.Level),
+							Level: transport.Level,
 						})
 					} else {
-						writer = multiLevelWriter(&color.Writer{
+						writer = multiLevelWriter(&LevelWriter{
 							W:     os.Stdout,
-							Level: color.LOGLEVEL(transport.Level),
+							Level: transport.Level,
 						})
 					}
 
@@ -233,7 +231,7 @@ func CreateLogger(level LOGLEVEL, format FormatFunc, transports []*Transport) *J
 	for _, level := range levels {
 		writer := struct {
 			l LOGLEVEL
-			w *LevelWriter
+			w *MutiWriter
 		}{
 			l: level,
 			w: j.createWriter(level),

@@ -5,21 +5,33 @@
 package logger
 
 import (
+	"fmt"
 	"io"
-
-	"github.com/2637309949/bulrush-addition/logger/color"
 )
 
-// LevelWriter write with level
+// LevelWriter defined level writer
 type LevelWriter struct {
-	Level   LOGLEVEL
-	writers []io.Writer
+	W     io.Writer
+	Level LOGLEVEL
 }
 
-func (t *LevelWriter) Write(p []byte) (n int, err error) {
+func (c *LevelWriter) Write(p []byte) (int, error) {
+	level := toLevelString(c.Level)
+	colorLevel := toColorString(c.Level, level)
+	pbyte := []byte(fmt.Sprintf("%s %s \n", colorLevel, string(p)))
+	return c.W.Write(pbyte)
+}
+
+// MutiWriter write with level
+type MutiWriter struct {
+	writers []io.Writer
+	Level   LOGLEVEL
+}
+
+func (t *MutiWriter) Write(p []byte) (n int, err error) {
 	for _, w := range t.writers {
-		if r, ok := w.(*color.Writer); ok {
-			r.Level = color.LOGLEVEL(t.Level)
+		if r, ok := w.(*LevelWriter); ok {
+			r.Level = t.Level
 		}
 		n, err = w.Write(p)
 		if err != nil {
@@ -33,14 +45,14 @@ func (t *LevelWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func multiLevelWriter(writers ...io.Writer) *LevelWriter {
+func multiLevelWriter(writers ...io.Writer) *MutiWriter {
 	allWriters := make([]io.Writer, 0, len(writers))
 	for _, w := range writers {
-		if mw, ok := w.(*LevelWriter); ok {
+		if mw, ok := w.(*MutiWriter); ok {
 			allWriters = append(allWriters, mw.writers...)
 		} else {
 			allWriters = append(allWriters, w)
 		}
 	}
-	return &LevelWriter{writers: allWriters}
+	return &MutiWriter{writers: allWriters}
 }
