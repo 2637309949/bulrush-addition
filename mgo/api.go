@@ -129,8 +129,8 @@ func (ai *API) One(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 	if profile == nil {
 		panic(fmt.Errorf("manifest %s not found", name))
 	}
-	if item, ok := profile["Opts"].(*APIOpts); ok {
-		opts = opts.mergeOpts(item)
+	if profile.Opts != nil {
+		opts = opts.mergeOpts(profile.Opts)
 	}
 	routePrefixs := opts.routePrefixs()
 	handler := func(c *gin.Context) {
@@ -149,8 +149,8 @@ func (ai *API) List(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc
 	if profile == nil {
 		panic(fmt.Errorf("manifest %s not found", name))
 	}
-	if item, ok := profile["Opts"].(*APIOpts); ok {
-		opts = opts.mergeOpts(item)
+	if profile.Opts != nil {
+		opts = opts.mergeOpts(profile.Opts)
 	}
 	routePrefixs := opts.routePrefixs()
 	handler := func(c *gin.Context) {
@@ -169,8 +169,8 @@ func (ai *API) Create(r *gin.RouterGroup, name string, handlers ...gin.HandlerFu
 	if profile == nil {
 		panic(fmt.Errorf("manifest %s not found", name))
 	}
-	if item, ok := profile["Opts"].(*APIOpts); ok {
-		opts = opts.mergeOpts(item)
+	if profile.Opts != nil {
+		opts = opts.mergeOpts(profile.Opts)
 	}
 	routePrefixs := opts.routePrefixs()
 	handler := func(c *gin.Context) {
@@ -189,8 +189,8 @@ func (ai *API) Update(r *gin.RouterGroup, name string, handlers ...gin.HandlerFu
 	if profile == nil {
 		panic(fmt.Errorf("manifest %s not found", name))
 	}
-	if item, ok := profile["Opts"].(*APIOpts); ok {
-		opts = opts.mergeOpts(item)
+	if profile.Opts != nil {
+		opts = opts.mergeOpts(profile.Opts)
 	}
 	routePrefixs := opts.routePrefixs()
 	handler := func(c *gin.Context) {
@@ -209,8 +209,8 @@ func (ai *API) Delete(r *gin.RouterGroup, name string, handlers ...gin.HandlerFu
 	if profile == nil {
 		panic(fmt.Errorf("manifest %s not found", name))
 	}
-	if item, ok := profile["Opts"].(*APIOpts); ok {
-		opts = opts.mergeOpts(item)
+	if profile.Opts != nil {
+		opts = opts.mergeOpts(profile.Opts)
 	}
 	routePrefixs := opts.routePrefixs()
 	handler := func(c *gin.Context) {
@@ -229,8 +229,8 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 	if profile == nil {
 		panic(fmt.Errorf("manifest %s not found", name))
 	}
-	if item, ok := profile["Opts"].(*APIOpts); ok {
-		opts = opts.mergeOpts(item)
+	if profile.Opts != nil {
+		opts = opts.mergeOpts(profile.Opts)
 	}
 	routePrefixs := opts.routePrefixs()
 	r.GET(routePrefixs.One(name), func(c *gin.Context) {

@@ -20,7 +20,7 @@ type (
 	// Mongo Type Defined
 	Mongo struct {
 		bulrush.PNBase
-		m       []map[string]interface{}
+		m       []*Profile
 		cfg     *Config
 		Session *mgo.Session
 		API     *API
@@ -47,15 +47,22 @@ type (
 		MinPoolSize    int           `json:"minPoolSize" yaml:"minPoolSize"`
 		MaxIdleTimeMS  int           `json:"maxIdleTimeMS" yaml:"maxIdleTimeMS"`
 	}
+	// Profile defined model profile
+	Profile struct {
+		DB        string
+		Name      string
+		Reflector interface{}
+		BanHook   bool
+		Opts      *APIOpts
+	}
 )
 
 // Plugin defined plugin for bulrush
 func (mgo *Mongo) Plugin() bulrush.PNRet {
 	return func(r *gin.RouterGroup) {
-		funk.ForEach(mgo.m, func(item map[string]interface{}) {
-			if autoHook, exists := item["autoHook"]; exists == false || autoHook == true {
-				collection := item["name"].(string)
-				mgo.API.ALL(r, collection)
+		funk.ForEach(mgo.m, func(item *Profile) {
+			if !item.BanHook {
+				mgo.API.ALL(r, item.Name)
 			}
 		})
 	}
@@ -63,11 +70,11 @@ func (mgo *Mongo) Plugin() bulrush.PNRet {
 
 // Register model
 // should provide name and reflector paramters
-func (mgo *Mongo) Register(manifest map[string]interface{}) *Mongo {
-	if _, ok := manifest["name"]; !ok {
+func (mgo *Mongo) Register(manifest *Profile) *Mongo {
+	if manifest.Name == "" {
 		panic(errors.New("name params must be provided"))
 	}
-	if _, ok := manifest["reflector"]; !ok {
+	if manifest.Reflector == nil {
 		panic(errors.New("reflector params must be provided"))
 	}
 	mgo.m = append(mgo.m, manifest)
@@ -75,13 +82,12 @@ func (mgo *Mongo) Register(manifest map[string]interface{}) *Mongo {
 }
 
 // Profile model profile
-func (mgo *Mongo) Profile(name string) map[string]interface{} {
-	m := funk.Find(mgo.m, func(item map[string]interface{}) bool {
-		flag := item["name"].(string) == name
-		return flag
+func (mgo *Mongo) Profile(name string) *Profile {
+	m := funk.Find(mgo.m, func(item *Profile) bool {
+		return item.Name == name
 	})
 	if m != nil {
-		profile := m.(map[string]interface{})
+		profile := m.(*Profile)
 		return profile
 	}
 	return nil
@@ -91,7 +97,7 @@ func (mgo *Mongo) Profile(name string) map[string]interface{} {
 func (mgo *Mongo) Vars(name string) interface{} {
 	m := mgo.Profile(name)
 	if m != nil {
-		return addition.CreateSlice(addition.LeftOkV(m["reflector"]))
+		return addition.CreateSlice(addition.LeftOkV(m.Reflector))
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
@@ -101,7 +107,7 @@ func (mgo *Mongo) Vars(name string) interface{} {
 func (mgo *Mongo) Var(name string) interface{} {
 	m := mgo.Profile(name)
 	if m != nil {
-		return addition.CreateObject(addition.LeftOkV(m["reflector"]))
+		return addition.CreateObject(addition.LeftOkV(m.Reflector))
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
@@ -109,8 +115,8 @@ func (mgo *Mongo) Var(name string) interface{} {
 // Model return instance
 // throw error if not exists these model
 func (mgo *Mongo) Model(name string) *mgo.Collection {
-	m := funk.Find(mgo.m, func(item map[string]interface{}) bool {
-		return item["name"].(string) == name
+	m := funk.Find(mgo.m, func(item *Profile) bool {
+		return item.Name == name
 	}).(map[string]interface{})
 	if m != nil {
 		db := addition.Some(m["db"], mgo.cfg.Database).(string)
@@ -164,7 +170,7 @@ func New(bulCfg *bulrush.Config) *Mongo {
 	}
 	session := openSession(conf)
 	mgo := &Mongo{}
-	mgo.m = make([]map[string]interface{}, 0)
+	mgo.m = make([]*Profile, 0)
 	mgo.cfg = conf
 	mgo.Session = session
 	mgo.API = &API{mgo: mgo, Opts: &APIOpts{}}

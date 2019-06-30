@@ -19,7 +19,7 @@ type (
 	// GORM Type Defined
 	GORM struct {
 		bulrush.PNBase
-		m        []map[string]interface{}
+		m        []*Profile
 		cfg      *Config
 		DB       *jzgorm.DB
 		AutoHook bulrush.PNBase
@@ -30,15 +30,22 @@ type (
 		DBType string `json:"dbType" yaml:"dbType"`
 		URL    string `json:"url" yaml:"url"`
 	}
+	// Profile defined model profile
+	Profile struct {
+		DB        string
+		Name      string
+		Reflector interface{}
+		BanHook   bool
+		Opts      *APIOpts
+	}
 )
 
 // Plugin defined plugin for bulrush
 func (gorm *GORM) Plugin() bulrush.PNRet {
 	return func(r *gin.RouterGroup) {
-		funk.ForEach(gorm.m, func(item map[string]interface{}) {
-			if autoHook, exists := item["autoHook"]; exists == false || autoHook == true {
-				collection := item["name"].(string)
-				gorm.API.ALL(r, collection)
+		funk.ForEach(gorm.m, func(item *Profile) {
+			if !item.BanHook {
+				gorm.API.ALL(r, item.Name)
 			}
 		})
 	}
@@ -46,25 +53,24 @@ func (gorm *GORM) Plugin() bulrush.PNRet {
 
 // Register model
 // should provide name and reflector paramters
-func (gorm *GORM) Register(manifest map[string]interface{}) *GORM {
-	if _, ok := manifest["name"]; !ok {
+func (gorm *GORM) Register(profile *Profile) *GORM {
+	if profile.Name == "" {
 		panic(errors.New("name params must be provided"))
 	}
-	if _, ok := manifest["reflector"]; !ok {
+	if profile.Reflector == nil {
 		panic(errors.New("reflector params must be provided"))
 	}
-	gorm.m = append(gorm.m, manifest)
+	gorm.m = append(gorm.m, profile)
 	return gorm
 }
 
 // Profile model profile
-func (gorm *GORM) Profile(name string) map[string]interface{} {
-	m := funk.Find(gorm.m, func(item map[string]interface{}) bool {
-		flag := item["name"].(string) == name
-		return flag
+func (gorm *GORM) Profile(name string) *Profile {
+	m := funk.Find(gorm.m, func(profile *Profile) bool {
+		return profile.Name == name
 	})
 	if m != nil {
-		profile := m.(map[string]interface{})
+		profile := m.(*Profile)
 		return profile
 	}
 	return nil
@@ -74,7 +80,7 @@ func (gorm *GORM) Profile(name string) map[string]interface{} {
 func (gorm *GORM) Vars(name string) interface{} {
 	m := gorm.Profile(name)
 	if m != nil {
-		return addition.CreateSlice(addition.LeftOkV(m["reflector"]))
+		return addition.CreateSlice(addition.LeftOkV(m.Reflector))
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
@@ -84,7 +90,7 @@ func (gorm *GORM) Vars(name string) interface{} {
 func (gorm *GORM) Var(name string) interface{} {
 	m := gorm.Profile(name)
 	if m != nil {
-		return addition.CreateObject(addition.LeftOkV(m["reflector"]))
+		return addition.CreateObject(addition.LeftOkV(m.Reflector))
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
@@ -107,7 +113,7 @@ func New(bulCfg *bulrush.Config) *GORM {
 	}
 	db := openSession(conf)
 	gorm := &GORM{}
-	gorm.m = make([]map[string]interface{}, 0)
+	gorm.m = make([]*Profile, 0)
 	gorm.cfg = conf
 	gorm.DB = db
 	gorm.API = &API{gorm: gorm, Opts: &APIOpts{}}
