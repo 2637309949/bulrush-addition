@@ -258,7 +258,15 @@ func (opts *Opts) routePrefixs() *RoutePrefixs {
 
 // Feature defined feature api
 func (ai *API) Feature(name string) *API {
-	feature := &API{gorm: ai.gorm, Opts: &Opts{FeaturePrefix: ai.Opts.FeaturePrefix + "/" + name}}
+	feature := &API{
+		gorm: ai.gorm,
+		Opts: &Opts{
+			Prefix:        ai.Opts.Prefix,
+			FeaturePrefix: ai.Opts.FeaturePrefix + "/" + name,
+			RoutePrefixs:  ai.Opts.RoutePrefixs,
+			RouteHooks:    ai.Opts.RouteHooks,
+		},
+	}
 	return feature
 }
 

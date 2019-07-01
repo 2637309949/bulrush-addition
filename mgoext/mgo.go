@@ -69,6 +69,12 @@ func (mgo *Mongo) Plugin() bulrush.PNRet {
 	}
 }
 
+// Init mgo
+func (mgo *Mongo) Init(init func(*Mongo)) *Mongo {
+	init(mgo)
+	return mgo
+}
+
 // Register model
 // should provide name and reflector paramters
 func (mgo *Mongo) Register(profile *Profile) *Mongo {

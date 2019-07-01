@@ -19,11 +19,10 @@ type (
 	// GORM Type Defined
 	GORM struct {
 		bulrush.PNBase
-		m        []*Profile
-		cfg      *Config
-		DB       *jzgorm.DB
-		AutoHook bulrush.PNBase
-		API      *API
+		m   []*Profile
+		cfg *Config
+		DB  *jzgorm.DB
+		API *API
 	}
 	// Config defined GORM Config
 	Config struct {
@@ -49,6 +48,12 @@ func (gorm *GORM) Plugin() bulrush.PNRet {
 			}
 		})
 	}
+}
+
+// Init gorm
+func (gorm *GORM) Init(init func(*GORM)) *GORM {
+	init(gorm)
+	return gorm
 }
 
 // Register model
