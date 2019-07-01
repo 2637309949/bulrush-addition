@@ -83,7 +83,7 @@ func (gorm *GORM) Profile(name string) *Profile {
 func (gorm *GORM) Vars(name string) interface{} {
 	m := gorm.Profile(name)
 	if m != nil {
-		return addition.CreateSlice(addition.LeftOkV(m.Reflector))
+		return addition.CreateSlice(m.Reflector)
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
@@ -93,7 +93,7 @@ func (gorm *GORM) Vars(name string) interface{} {
 func (gorm *GORM) Var(name string) interface{} {
 	m := gorm.Profile(name)
 	if m != nil {
-		return addition.CreateObject(addition.LeftOkV(m.Reflector))
+		return addition.CreateObject(m.Reflector)
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }

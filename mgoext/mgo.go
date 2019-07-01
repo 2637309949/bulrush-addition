@@ -102,7 +102,7 @@ func (mgo *Mongo) Profile(name string) *Profile {
 func (mgo *Mongo) Vars(name string) interface{} {
 	m := mgo.Profile(name)
 	if m != nil {
-		return addition.CreateSlice(addition.LeftOkV(m.Reflector))
+		return addition.CreateSlice(m.Reflector)
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
@@ -112,7 +112,7 @@ func (mgo *Mongo) Vars(name string) interface{} {
 func (mgo *Mongo) Var(name string) interface{} {
 	m := mgo.Profile(name)
 	if m != nil {
-		return addition.CreateObject(addition.LeftOkV(m.Reflector))
+		return addition.CreateObject(m.Reflector)
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }

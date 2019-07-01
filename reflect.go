@@ -24,7 +24,10 @@ func CreateObject(target interface{}) interface{} {
 
 // indirect from ptr
 func indirectValue(reflectValue reflect.Value) reflect.Value {
-	for reflectValue.Kind() == reflect.Ptr {
+	if reflectValue.Kind() == reflect.Ptr && reflectValue.Elem().Kind() == reflect.Interface {
+		reflectValue = reflectValue.Elem().Elem()
+	}
+	for reflectValue.Kind() == reflect.Slice || reflectValue.Kind() == reflect.Ptr {
 		reflectValue = reflectValue.Elem()
 	}
 	return reflectValue
@@ -32,7 +35,10 @@ func indirectValue(reflectValue reflect.Value) reflect.Value {
 
 // indirect from ptr
 func indirectType(reflectType reflect.Type) reflect.Type {
-	for reflectType.Kind() == reflect.Ptr {
+	if reflectType.Kind() == reflect.Ptr && reflectType.Elem().Kind() == reflect.Interface {
+		reflectType = reflectType.Elem().Elem()
+	}
+	for reflectType.Kind() == reflect.Slice || reflectType.Kind() == reflect.Ptr {
 		reflectType = reflectType.Elem()
 	}
 	return reflectType
