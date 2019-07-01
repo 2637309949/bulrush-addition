@@ -1,15 +1,19 @@
 ## bulrush-addition
-	Provides cross-module references.  
-
+~Provides the ability to expose default interfaces based on database-driven wrappers
+~
 ### mgo
+
+**create mgoext**
 ```go
 var MGOExt = mgoext.New(conf.Cfg)
 ```
 
+**use as a bulrush plugin**
 ```go
 app.PostUse(addition.MGOExt)
 ```
 
+**defined model and custom your own config**
 ```go
 type User struct {
 	Base     `bson:",inline"`
@@ -44,11 +48,13 @@ func RegisterUser(r *gin.RouterGroup) {
 ```
 
 ### gorm
+
+**create gormext**
 ```go
 var GORMExt = gormext.New(conf.Cfg)
 var _ = GORMExt.DB.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8mb4")
 ```
-
+**use as a bulrush plugin**
 ```go
 app.PostUse(addition.GORMExt)
 ```
@@ -67,6 +73,7 @@ var _ = addition.GORMExt.Register(&gormext.Profile{
 	BanHook:   true,
 })
 
+**defined model and custom your own config**
 // RegisterUser inject function
 func RegisterUser(r *gin.RouterGroup) {
 	addition.GORMExt.API.List(r, "user").Pre(func(c *gin.Context) {
