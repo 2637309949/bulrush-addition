@@ -22,7 +22,7 @@ type form struct {
 	Category interface{}              `form:"category" json:"category" xml:"category" `
 }
 
-func one(name string, c *gin.Context, gorm *GORM) {
+func one(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 	db := gorm.DB
 	one := gorm.Var(name)
 	q := Query{}
@@ -52,7 +52,7 @@ func one(name string, c *gin.Context, gorm *GORM) {
 	c.JSON(http.StatusOK, one)
 }
 
-func list(name string, c *gin.Context, gorm *GORM) {
+func list(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 	db := gorm.DB
 	q := Query{}
 	totalrecords := 0
@@ -138,7 +138,7 @@ func list(name string, c *gin.Context, gorm *GORM) {
 	}
 }
 
-func create(name string, c *gin.Context, gorm *GORM) {
+func create(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 	var form form
 	binds := gorm.Vars(name)
 	if err := c.ShouldBindJSON(&form); err != nil {
@@ -183,7 +183,7 @@ func create(name string, c *gin.Context, gorm *GORM) {
 	})
 }
 
-func remove(name string, c *gin.Context, gorm *GORM) {
+func remove(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 	var form form
 	bind := gorm.Var(name)
 	if err := c.ShouldBindJSON(&form); err != nil {
@@ -213,7 +213,7 @@ func remove(name string, c *gin.Context, gorm *GORM) {
 	})
 }
 
-func update(name string, c *gin.Context, gorm *GORM) {
+func update(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 	var form form
 	bind := gorm.Var(name)
 	if err := c.ShouldBindJSON(&form); err != nil {
