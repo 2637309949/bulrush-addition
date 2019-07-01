@@ -5,6 +5,8 @@
 package mgoext
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,6 +24,14 @@ type (
 	}
 )
 
+// FailureHandler handlerss
+var FailureHandler = func(c *gin.Context) {
+	c.JSON(http.StatusForbidden, gin.H{
+		"message": "Access Denied, you don't have permission",
+	})
+	c.Abort()
+}
+
 // route defined gin middle
 func (h *Hook) route() func(c *gin.Context) {
 	return func(c *gin.Context) {
@@ -33,6 +43,8 @@ func (h *Hook) route() func(c *gin.Context) {
 				h.handler(c)
 			} else if h.auth == nil {
 				h.handler(c)
+			} else {
+				FailureHandler(c)
 			}
 		}
 		if h.post != nil {
