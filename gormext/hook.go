@@ -43,7 +43,7 @@ func (h *Hook) route() func(c *gin.Context) {
 
 // Pre defined pre handler
 func (h *Hook) Pre(pre func(*gin.Context)) *Hook {
-	if h.pre == nil {
+	if pre != nil {
 		h.pre = pre
 	}
 	return h
@@ -51,7 +51,7 @@ func (h *Hook) Pre(pre func(*gin.Context)) *Hook {
 
 // Post defined pre handler
 func (h *Hook) Post(post func(*gin.Context)) *Hook {
-	if h.post == nil {
+	if post != nil {
 		h.post = post
 	}
 	return h
@@ -59,7 +59,7 @@ func (h *Hook) Post(post func(*gin.Context)) *Hook {
 
 // Auth defined pre handler
 func (h *Hook) Auth(auth func(*gin.Context) bool) *Hook {
-	if h.auth == nil {
+	if auth != nil {
 		h.auth = auth
 	}
 	return h
