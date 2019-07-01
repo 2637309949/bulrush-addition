@@ -282,7 +282,7 @@ func (ai *API) One(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 	routeHooks := opts.routeHooks()
 
 	handler := func(c *gin.Context) {
-		one(name, ai.mgo, c)
+		one(name, c, ai.mgo)
 	}
 	h := createHooks(ai.mgo, handler)
 	h.Pre(routeHooks.List.Pre)
@@ -307,7 +307,7 @@ func (ai *API) List(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc
 	routeHooks := opts.routeHooks()
 
 	handler := func(c *gin.Context) {
-		list(name, ai.mgo, c)
+		list(name, c, ai.mgo)
 	}
 	h := createHooks(ai.mgo, handler)
 	h.Pre(routeHooks.List.Pre)
@@ -332,7 +332,7 @@ func (ai *API) Create(r *gin.RouterGroup, name string, handlers ...gin.HandlerFu
 	routeHooks := opts.routeHooks()
 
 	handler := func(c *gin.Context) {
-		create(name, ai.mgo, c)
+		create(name, c, ai.mgo)
 	}
 	h := createHooks(ai.mgo, handler)
 	h.Pre(routeHooks.List.Pre)
@@ -357,7 +357,7 @@ func (ai *API) Update(r *gin.RouterGroup, name string, handlers ...gin.HandlerFu
 	routeHooks := opts.routeHooks()
 
 	handler := func(c *gin.Context) {
-		update(name, ai.mgo, c)
+		update(name, c, ai.mgo)
 	}
 	h := createHooks(ai.mgo, handler)
 	h.Pre(routeHooks.List.Pre)
@@ -382,7 +382,7 @@ func (ai *API) Delete(r *gin.RouterGroup, name string, handlers ...gin.HandlerFu
 	routeHooks := opts.routeHooks()
 
 	handler := func(c *gin.Context) {
-		remove(name, ai.mgo, c)
+		remove(name, c, ai.mgo)
 	}
 	h := createHooks(ai.mgo, handler)
 	h.Pre(routeHooks.List.Pre)
@@ -409,7 +409,7 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 	h := createHooks(ai.mgo, nil)
 	r.GET(routePrefixs.One(name), combineHF(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
-			one(name, ai.mgo, c)
+			one(name, c, ai.mgo)
 		}
 		h1 := createHooks(ai.mgo, handler)
 		h1.Pre(routeHooks.One.Pre)
@@ -423,7 +423,7 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 	}, handlers)...)
 	r.GET(routePrefixs.List(name), combineHF(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
-			list(name, ai.mgo, c)
+			list(name, c, ai.mgo)
 		}
 		h1 := createHooks(ai.mgo, handler)
 		h1.Pre(routeHooks.List.Pre)
@@ -437,7 +437,7 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 	}, handlers)...)
 	r.POST(routePrefixs.Create(name), combineHF(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
-			create(name, ai.mgo, c)
+			create(name, c, ai.mgo)
 		}
 		h1 := createHooks(ai.mgo, handler)
 		h1.Pre(routeHooks.Create.Pre)
@@ -451,7 +451,7 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 	}, handlers)...)
 	r.PUT(routePrefixs.Update(name), combineHF(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
-			update(name, ai.mgo, c)
+			update(name, c, ai.mgo)
 		}
 		h1 := createHooks(ai.mgo, handler)
 		h1.Pre(routeHooks.Update.Pre)
@@ -465,7 +465,7 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 	}, handlers)...)
 	r.DELETE(routePrefixs.Delete(name), combineHF(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
-			remove(name, ai.mgo, c)
+			remove(name, c, ai.mgo)
 		}
 		h1 := createHooks(ai.mgo, handler)
 		h1.Pre(routeHooks.Delete.Pre)

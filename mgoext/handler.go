@@ -20,7 +20,7 @@ type form struct {
 	Category interface{}              `form:"category" json:"category" xml:"category" `
 }
 
-func one(name string, mgo *Mongo, c *gin.Context) {
+func one(name string, c *gin.Context, mgo *Mongo) {
 	id := c.Param("id")
 	Model := mgo.Model(name)
 	one := mgo.Var(name)
@@ -54,7 +54,7 @@ func one(name string, mgo *Mongo, c *gin.Context) {
 	})
 }
 
-func list(name string, mgo *Mongo, c *gin.Context) {
+func list(name string, c *gin.Context, mgo *Mongo) {
 	var match map[string]interface{}
 	Model := mgo.Model(name)
 	one := mgo.Var(name)
@@ -108,7 +108,7 @@ func list(name string, mgo *Mongo, c *gin.Context) {
 	}
 }
 
-func create(name string, mgo *Mongo, c *gin.Context) {
+func create(name string, c *gin.Context, mgo *Mongo) {
 	var form form
 	Model := mgo.Model(name)
 	if error := c.ShouldBind(&form); error != nil {
@@ -127,7 +127,7 @@ func create(name string, mgo *Mongo, c *gin.Context) {
 	})
 }
 
-func remove(name string, mgo *Mongo, c *gin.Context) {
+func remove(name string, c *gin.Context, mgo *Mongo) {
 	var form form
 	Model := mgo.Model(name)
 	if error := c.ShouldBind(&form); error != nil {
@@ -148,7 +148,7 @@ func remove(name string, mgo *Mongo, c *gin.Context) {
 	})
 }
 
-func update(name string, mgo *Mongo, c *gin.Context) {
+func update(name string, c *gin.Context, mgo *Mongo) {
 	var form form
 	Model := mgo.Model(name)
 	if error := c.ShouldBind(&form); error != nil {
