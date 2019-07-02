@@ -59,7 +59,7 @@ type (
 )
 
 // Plugin defined plugin for bulrush
-func (mgo *Mongo) Plugin() bulrush.PNRet {
+func (mgo *Mongo) Plugin() interface{} {
 	return func(r *gin.RouterGroup) {
 		funk.ForEach(mgo.m, func(item *Profile) {
 			if !item.BanHook {

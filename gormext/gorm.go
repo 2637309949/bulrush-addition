@@ -40,7 +40,7 @@ type (
 )
 
 // Plugin defined plugin for bulrush
-func (gorm *GORM) Plugin() bulrush.PNRet {
+func (gorm *GORM) Plugin() interface{} {
 	return func(r *gin.RouterGroup) {
 		funk.ForEach(gorm.m, func(item *Profile) {
 			if !item.BanHook {
