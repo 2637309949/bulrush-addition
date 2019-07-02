@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/2637309949/bulrush"
 	addition "github.com/2637309949/bulrush-addition"
 	"github.com/gin-gonic/gin"
 	jzgorm "github.com/jinzhu/gorm"
@@ -18,7 +17,6 @@ import (
 type (
 	// GORM Type Defined
 	GORM struct {
-		bulrush.PNBase
 		m   []*Profile
 		cfg *Config
 		DB  *jzgorm.DB
@@ -40,14 +38,12 @@ type (
 )
 
 // Plugin defined plugin for bulrush
-func (gorm *GORM) Plugin() interface{} {
-	return func(r *gin.RouterGroup) {
-		funk.ForEach(gorm.m, func(item *Profile) {
-			if !item.BanHook {
-				gorm.API.ALL(r, item.Name)
-			}
-		})
-	}
+func (gorm *GORM) Plugin(r *gin.RouterGroup) {
+	funk.ForEach(gorm.m, func(item *Profile) {
+		if !item.BanHook {
+			gorm.API.ALL(r, item.Name)
+		}
+	})
 }
 
 // Init gorm

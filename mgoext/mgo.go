@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/2637309949/bulrush"
 	addition "github.com/2637309949/bulrush-addition"
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo"
@@ -19,7 +18,6 @@ import (
 type (
 	// Mongo Type Defined
 	Mongo struct {
-		bulrush.PNBase
 		m       []*Profile
 		cfg     *Config
 		Session *mgo.Session
@@ -59,14 +57,12 @@ type (
 )
 
 // Plugin defined plugin for bulrush
-func (mgo *Mongo) Plugin() interface{} {
-	return func(r *gin.RouterGroup) {
-		funk.ForEach(mgo.m, func(item *Profile) {
-			if !item.BanHook {
-				mgo.API.ALL(r, item.Name)
-			}
-		})
-	}
+func (mgo *Mongo) Plugin(r *gin.RouterGroup) {
+	funk.ForEach(mgo.m, func(item *Profile) {
+		if !item.BanHook {
+			mgo.API.ALL(r, item.Name)
+		}
+	})
 }
 
 // Init mgo
