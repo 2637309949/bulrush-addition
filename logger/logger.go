@@ -178,6 +178,36 @@ func (j *Journal) fprintf(w *MutiWriter, format string, a ...interface{}) {
 	fmt.Fprintf(w, format, a...)
 }
 
+func (j *Journal) appendTransport(transports ...*Transport) *Journal {
+	for _, transport := range transports {
+		if transport.Level == 0 {
+			transport.Level = INFO
+		}
+		if transport.Dirname == "" {
+			transport.Type = "Print"
+		} else if transport.Dirname != "" {
+			transport.Type = "File"
+		}
+	}
+	j.transports = append(j.transports, transports...)
+	levels := []LEVEL{ERROR, WARN, INFO, VERBOSE, DEBUG, SILLY, HTTP}
+	j.writers = make([]struct {
+		l LEVEL
+		w *MutiWriter
+	}, 0)
+	for _, level := range levels {
+		writer := struct {
+			l LEVEL
+			w *MutiWriter
+		}{
+			l: level,
+			w: j.createWriter(level),
+		}
+		j.writers = append(j.writers, writer)
+	}
+	return j
+}
+
 // create writer
 func (j *Journal) createWriter(level LEVEL) *MutiWriter {
 	var writer *MutiWriter
