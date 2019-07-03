@@ -32,14 +32,16 @@ func (t *MutiWriter) Write(p []byte) (n int, err error) {
 	for _, w := range t.writers {
 		if r, ok := w.(*LevelWriter); ok {
 			r.Level = t.Level
-		}
-		n, err = w.Write(p)
-		if err != nil {
-			return
-		}
-		if n != len(p) {
-			err = io.ErrShortWrite
-			return
+			n, err = w.Write(p)
+			if err != nil {
+				return
+			}
+		} else {
+			pbyte := []byte(fmt.Sprintf("%s \n", string(p)))
+			n, err = w.Write(pbyte)
+			if err != nil {
+				return
+			}
 		}
 	}
 	return len(p), nil
