@@ -5,7 +5,6 @@
 package apidoc
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path"
 
@@ -31,8 +30,6 @@ func New() *APIDoc {
 // Doc defined apidoc
 func (api *APIDoc) Doc(dir string) *APIDoc {
 	apiData, err := ioutil.ReadFile(path.Join(dir, APIData))
-	fmt.Println(path.Join(dir, APIData))
-	fmt.Println(path.Join("/", APIData))
 	if err == nil {
 		template.WriteFile(path.Join("/", APIData), apiData, 0777)
 	}
@@ -47,20 +44,6 @@ func (api *APIDoc) Doc(dir string) *APIDoc {
 func (api *APIDoc) Init(init func(*APIDoc)) *APIDoc {
 	init(api)
 	return api
-}
-
-func splitByWidth(str string, size int) []string {
-	strLength := len(str)
-	var splited []string
-	var stop int
-	for i := 0; i < strLength; i += size {
-		stop = i + size
-		if stop > strLength {
-			stop = strLength
-		}
-		splited = append(splited, str[i:stop])
-	}
-	return splited
 }
 
 // Plugin for doc
