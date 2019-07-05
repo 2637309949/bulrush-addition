@@ -33,40 +33,40 @@ type (
 	}
 	// RouteHooks defined route hooks
 	RouteHooks struct {
-		One    *OneHookOpts
-		List   *ListHookOpts
-		Create *CreateHookOpts
-		Update *UpdateHookOpts
-		Delete *DeleteHookOpts
+		One    *OneHook
+		List   *ListHook
+		Create *CreateHook
+		Update *UpdateHook
+		Delete *DeleteHook
 	}
-	// OneHookOpts defined one hook opts
-	OneHookOpts struct {
+	// OneHook defined one hook opts
+	OneHook struct {
 		Pre  gin.HandlerFunc
 		Post gin.HandlerFunc
 		Auth func(*gin.Context) bool
 		Cond func(map[string]interface{}) map[string]interface{}
 	}
-	// ListHookOpts defined list hook opts
-	ListHookOpts struct {
+	// ListHook defined list hook opts
+	ListHook struct {
 		Pre  gin.HandlerFunc
 		Post gin.HandlerFunc
 		Auth func(*gin.Context) bool
 		Cond func(map[string]interface{}) map[string]interface{}
 	}
-	// CreateHookOpts defined create hook opts
-	CreateHookOpts struct {
+	// CreateHook defined create hook opts
+	CreateHook struct {
 		Pre  gin.HandlerFunc
 		Post gin.HandlerFunc
 		Auth func(*gin.Context) bool
 	}
-	// UpdateHookOpts defined create hook opts
-	UpdateHookOpts struct {
+	// UpdateHook defined create hook opts
+	UpdateHook struct {
 		Pre  gin.HandlerFunc
 		Post gin.HandlerFunc
 		Auth func(*gin.Context) bool
 	}
-	// DeleteHookOpts defined delete hook opts
-	DeleteHookOpts struct {
+	// DeleteHook defined delete hook opts
+	DeleteHook struct {
 		Pre  gin.HandlerFunc
 		Post gin.HandlerFunc
 		Auth func(*gin.Context) bool
@@ -85,11 +85,11 @@ func (opts *Opts) mergeOpts(upOpts *Opts) *Opts {
 		Prefix:        opts.Prefix,
 		FeaturePrefix: opts.FeaturePrefix,
 		RouteHooks: &RouteHooks{
-			One:    &OneHookOpts{},
-			List:   &ListHookOpts{},
-			Create: &CreateHookOpts{},
-			Update: &UpdateHookOpts{},
-			Delete: &DeleteHookOpts{},
+			One:    &OneHook{},
+			List:   &ListHook{},
+			Create: &CreateHook{},
+			Update: &UpdateHook{},
+			Delete: &DeleteHook{},
 		},
 		RoutePrefixs: &RoutePrefixs{},
 	}
@@ -200,10 +200,10 @@ func (opts *Opts) featurePrefix() string {
 func (opts *Opts) routeHooks() *RouteHooks {
 	if opts.RouteHooks == nil {
 		return &RouteHooks{
-			One:    &OneHookOpts{},
-			List:   &ListHookOpts{},
-			Create: &CreateHookOpts{},
-			Delete: &DeleteHookOpts{},
+			One:    &OneHook{},
+			List:   &ListHook{},
+			Create: &CreateHook{},
+			Delete: &DeleteHook{},
 		}
 	}
 	return opts.RouteHooks
