@@ -1,3 +1,7 @@
+// Copyright (c) 2018-2020 Double All rights reserved.
+// Use of this source code is governed by a MIT style
+// license that can be found in the LICENSE file.
+
 package template
 
 import (
@@ -5,7 +9,6 @@ import (
 
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"path"
 
@@ -22,13 +25,7 @@ var (
 
 	// Handler is used to server files through a http handler
 	Handler *webdav.Handler
-
-	// HTTP is the http file system
-	HTTP http.FileSystem = new(HTTPFS)
 )
-
-// HTTPFS implements http.FileSystem
-type HTTPFS struct{}
 
 func init() {
 	if CTX.Err() != nil {
@@ -42,16 +39,6 @@ func init() {
 		LockSystem: webdav.NewMemLS(),
 	}
 
-}
-
-// Open a file
-func (hfs *HTTPFS) Open(path string) (http.File, error) {
-	f, err := FS.OpenFile(CTX, path, os.O_RDONLY, 0644)
-	if err != nil {
-		return nil, err
-	}
-
-	return f, nil
 }
 
 // ReadFile is adapTed from ioutil

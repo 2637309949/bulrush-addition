@@ -5,6 +5,10 @@
 package apidoc
 
 import (
+	"fmt"
+	"io/ioutil"
+	"path"
+
 	"github.com/2637309949/bulrush-addition/apidoc/template"
 
 	"github.com/gin-gonic/gin"
@@ -13,15 +17,30 @@ import (
 type (
 	// APIDoc for apidoc
 	APIDoc struct {
-		URLPrefix string
+		Prefix string
 	}
 )
 
 // New defined return Apidoc struct
 func New() *APIDoc {
 	return &APIDoc{
-		URLPrefix: "/docs",
+		Prefix: "/docs",
 	}
+}
+
+// Doc defined apidoc
+func (api *APIDoc) Doc(dir string) *APIDoc {
+	apiData, err := ioutil.ReadFile(path.Join(dir, APIData))
+	fmt.Println(path.Join(dir, APIData))
+	fmt.Println(path.Join("/", APIData))
+	if err == nil {
+		template.WriteFile(path.Join("/", APIData), apiData, 0777)
+	}
+	apiProject, err := ioutil.ReadFile(path.Join(dir, APIProject))
+	if err == nil {
+		template.WriteFile(path.Join("/", APIProject), apiProject, 0777)
+	}
+	return api
 }
 
 // Init defined struct Init
@@ -46,8 +65,8 @@ func splitByWidth(str string, size int) []string {
 
 // Plugin for doc
 func (api *APIDoc) Plugin(httpProxy *gin.Engine) *APIDoc {
-	template.Handler.Prefix = api.URLPrefix
-	httpProxy.GET(api.URLPrefix+"/*any", func(c *gin.Context) {
+	template.Handler.Prefix = api.Prefix
+	httpProxy.GET(api.Prefix+"/*any", func(c *gin.Context) {
 		template.Handler.ServeHTTP(c.Writer, c.Request)
 	})
 	return api

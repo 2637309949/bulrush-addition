@@ -145,6 +145,38 @@ app.Use(&limit.Limit{
 })
 ```
 
+### apidoc
+
+#### Install apidoc
+```shell
+npm install apidoc -g
+```
+#### Add ignore to .igonre file
+```txt
+/doc/*
+!/doc/api_data.js
+!/doc/api_project.js
+```
+#### Generate apidoc 
+```shell
+apidoc
+```
+	apidoc will generate doc dir and some files in doc dir
+
+#### Use apidoc plugin
+
+```so
+// APIDoc defined http rest api
+// APIDoc defined http rest api
+var APIDoc = apidoc.New()
+var _ = APIDoc.
+	Config(path.Join("", "doc")).
+	Init(func(ctx *apidoc.APIDoc) {
+		ctx.Prefix = "/docs"
+	})
+app.Use(APIDoc)
+```
+
 ## MIT License
 
 Copyright (c) 2018-2020 Double
