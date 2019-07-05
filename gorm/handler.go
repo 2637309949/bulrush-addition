@@ -45,7 +45,8 @@ func one(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 			db = db.Preload(pre)
 		}
 	}
-	if err := db.First(one, id).Error; err != nil {
+	cond := opts.RouteHooks.One.Cond(map[string]interface{}{"id": id})
+	if err := db.First(one, cond).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
