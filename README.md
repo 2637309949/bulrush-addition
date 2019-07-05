@@ -51,8 +51,18 @@ func RegisterUser(r *gin.RouterGroup) {
 
 **create gormext**
 ```go
-var GORMExt = gormext.New(conf.Cfg)
-var _ = GORMExt.DB.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8mb4")
+var GORMExt = gormext.New(gormConf)
+var _ = GORMExt.Init(func(ext *gormext.GORM) {
+	ext.DB.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8mb4")
+	ext.API.Opts.Prefix = "/template/gorm"
+	ext.API.Opts.RouteHooks = &gormext.RouteHooks{
+		List: &gormext.ListHook{
+			Pre: func(c *gin.Context) {
+				Logger.Info("all gormext before")
+			},
+		},
+	}
+})
 ```
 **use as a bulrush plugin**
 ```go
@@ -92,31 +102,24 @@ func RegisterUser(r *gin.RouterGroup) {
 ```
 ### logger
 ```
-logDir := path.Join(".", utils.Some(conf.Cfg.Log.Path, "logs").(string))
-transports := []*logger.Transport{
-	// only for error
+// Logger application logger
+var Logger = addition.RushLogger.AppendTransports([]*logger.Transport{
 	&logger.Transport{
-		Dirname: path.Join(logDir, "error"),
-		Level:   logger.ERRORLevel,
+		Dirname: path.Join(path.Join(".", utils.Some(conf.Cfg.Log.Path, "logs").(string)), "error"),
+		Level:   logger.ERROR,
 		Maxsize: logger.Maxsize,
 	},
-	// combined all level
 	&logger.Transport{
-		Dirname: path.Join(logDir, "combined"),
-		Level:   logger.INFOLevel,
+		Dirname: path.Join(path.Join(".", utils.Some(conf.Cfg.Log.Path, "logs").(string)), "combined"),
+		Level:   logger.SILLY,
 		Maxsize: logger.Maxsize,
 	},
 	// console level
-	&logger.Transport{
-		Level: logger.INFOLevel,
-	},
-}
-logger := logger.CreateLogger(
-	logger.INFOLevel,
-	nil,
-	transports,
-)
-logger.Info("after")
+	// &logger.Transport{
+	// 	Level: logger.SILLY,
+	// },
+}...)
+Logger.Info("after")
 ```
 
 ### redis
