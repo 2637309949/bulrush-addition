@@ -28,25 +28,27 @@ type Query struct {
 }
 
 // BuildWhere defined select sql
-func (q *Query) BuildWhere() (string, error) {
+func (q *Query) BuildWhere() error {
 	var where map[string]interface{}
-	var cloneWhere map[string]interface{}
 	if q.Where == "" {
 		q.Where = "%7B%7D"
 	}
 	unescapeWhere, err := url.QueryUnescape(q.Where)
 	if err != nil {
-		return "", err
+		return err
 	}
 	err = json.Unmarshal([]byte(unescapeWhere), &where)
 	if err != nil {
-		return "", err
+		return err
 	}
-	err = addition.CopyMap(where, &cloneWhere)
-	if err != nil {
-		return "", err
-	}
-	q.WhereMap = cloneWhere
+	q.WhereMap = where
+	return nil
+}
+
+// FlatWhere defined flat where to sql
+func (q *Query) FlatWhere() (string, error) {
+	var cloneWhere map[string]interface{}
+	err := addition.CopyMap(q.WhereMap, &cloneWhere)
 	flatWhere, err := flatAndToOr(cloneWhere)
 	if err != nil {
 		return "", err

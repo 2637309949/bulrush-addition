@@ -45,7 +45,7 @@ func one(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 			db = db.Preload(pre)
 		}
 	}
-	cond := opts.RouteHooks.One.Cond(map[string]interface{}{"id": id})
+	cond := opts.RouteHooks.One.Cond(map[string]interface{}{"id": id}, struct{ name string }{name: name})
 	if err := db.First(one, cond).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -64,7 +64,13 @@ func list(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	sql, err := q.BuildWhere()
+	err = q.BuildWhere()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	q.WhereMap = opts.RouteHooks.List.Cond(q.WhereMap, struct{ name string }{name: name})
+	sql, err := q.FlatWhere()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -146,6 +152,7 @@ func create(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
+	form = opts.RouteHooks.Create.Form(form)
 	docsByte, err := json.Marshal(form.Docs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -191,6 +198,7 @@ func remove(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
+	form = opts.RouteHooks.Delete.Form(form)
 	tx := gorm.DB.Begin()
 	for _, item := range form.Docs {
 		id, ok := item["id"]
@@ -198,7 +206,7 @@ func remove(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "no id found!"})
 			return
 		}
-		if err := tx.Model(bind).Where("id=?", id).Update(map[string]interface{}{"deletedAt": time.Now()}).Error; err != nil {
+		if err := tx.Model(bind).Where("id=?", id).Update(item).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
@@ -221,6 +229,7 @@ func update(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
+	form = opts.RouteHooks.Create.Form(form)
 	tx := gorm.DB.Begin()
 	for _, item := range form.Docs {
 		id, ok := item["id"]
