@@ -8,8 +8,8 @@ import "time"
 
 // Model base model definition, including fields `ID`, `CreatedAt`, `UpdatedAt`, `DeletedAt`, which could be embedded in your models
 type Model struct {
-	ID        uint       `gorm:"primary_key" form:"id" json:"id" xml:"id"`
-	CreatedAt time.Time  `form:"createdAt" json:"createdAt" xml:"createdAt"`
-	UpdatedAt time.Time  `form:"updatedAt" json:"updatedAt" xml:"updatedAt"`
-	DeletedAt *time.Time `sql:"index" form:"deletedAt" json:"deletedAt" xml:"deletedAt"`
+	ID        uint       `gorm:"comment:'主键ID';primary_key"`
+	CreatedAt *time.Time `gorm:"comment:'创建时间';"`
+	UpdatedAt *time.Time `gorm:"comment:'更新时间';"`
+	DeletedAt *time.Time `gorm:"comment:'删除时间';"`
 }

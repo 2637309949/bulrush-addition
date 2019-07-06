@@ -5,11 +5,13 @@
 package apidoc
 
 import (
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"path"
 
 	"github.com/2637309949/bulrush-addition/apidoc/template"
-
+	gormext "github.com/2637309949/bulrush-addition/gorm"
 	"github.com/gin-gonic/gin"
 )
 
@@ -40,6 +42,21 @@ func (api *APIDoc) Doc(dir string) *APIDoc {
 	return api
 }
 
+func (api *APIDoc) writeSysDoc(docs *[]gormext.Doc) *APIDoc {
+	apiData := struct {
+		API interface{} `json:"api" yaml:"api"`
+	}{
+		API: docs,
+	}
+	apiDataByte, err := json.Marshal(apiData)
+	apiDataString := fmt.Sprintf("define(%s)", string(apiDataByte))
+	template.WriteFile(path.Join("/", APIDataSys), []byte(apiDataString), 0777)
+	if err != nil {
+		panic(err)
+	}
+	return api
+}
+
 // Init defined struct Init
 func (api *APIDoc) Init(init func(*APIDoc)) *APIDoc {
 	init(api)
@@ -47,8 +64,9 @@ func (api *APIDoc) Init(init func(*APIDoc)) *APIDoc {
 }
 
 // Plugin for doc
-func (api *APIDoc) Plugin(httpProxy *gin.Engine) *APIDoc {
+func (api *APIDoc) Plugin(httpProxy *gin.Engine, gormext *gormext.GORM) *APIDoc {
 	template.Handler.Prefix = api.Prefix
+	api.writeSysDoc(gormext.Docs())
 	httpProxy.GET(api.Prefix+"/*any", func(c *gin.Context) {
 		template.Handler.ServeHTTP(c.Writer, c.Request)
 	})

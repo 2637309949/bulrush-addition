@@ -4,9 +4,22 @@
 
 package gormext
 
-import "github.com/gin-gonic/gin"
+import (
+	"regexp"
+
+	"github.com/gin-gonic/gin"
+)
 
 func combineHF(handler gin.HandlerFunc, handlers []gin.HandlerFunc) []gin.HandlerFunc {
 	h := append(handlers, handler)
 	return h
+}
+
+func findStringSubmatch(matcher string, s string) []string {
+	var rgx = regexp.MustCompile(matcher)
+	rs := rgx.FindStringSubmatch(s)
+	if rs != nil {
+		return rs[1:]
+	}
+	return []string{}
 }

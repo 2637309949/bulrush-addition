@@ -7,5 +7,8 @@ package apidoc
 // APIData defined APIData
 var APIData = "api_data.js"
 
+// APIDataSys defined APIData
+var APIDataSys = "api_data_sys.js"
+
 // APIProject defined APIProject
 var APIProject = "api_project.js"

@@ -10,7 +10,7 @@ import (
 
 	addition "github.com/2637309949/bulrush-addition"
 	"github.com/gin-gonic/gin"
-	jzgorm "github.com/jinzhu/gorm"
+	"github.com/jinzhu/gorm"
 	"github.com/thoas/go-funk"
 )
 
@@ -19,7 +19,7 @@ type (
 	GORM struct {
 		m   []*Profile
 		cfg *Config
-		DB  *jzgorm.DB
+		DB  *gorm.DB
 		API *API
 	}
 	// Config defined GORM Config
@@ -34,16 +34,27 @@ type (
 		Reflector interface{}
 		BanHook   bool
 		Opts      *Opts
+		docs      *[]Doc
 	}
 )
 
+// Docs defined Docs for bulrush
+func (gorm *GORM) Docs() *[]Doc {
+	docs := []Doc{}
+	funk.ForEach(gorm.m, func(item *Profile) {
+		docs = append(docs, *item.docs...)
+	})
+	return &docs
+}
+
 // Plugin defined plugin for bulrush
-func (gorm *GORM) Plugin(r *gin.RouterGroup) {
+func (gorm *GORM) Plugin(r *gin.RouterGroup) *GORM {
 	funk.ForEach(gorm.m, func(item *Profile) {
 		if !item.BanHook {
 			gorm.API.ALL(r, item.Name)
 		}
 	})
+	return gorm
 }
 
 // Init gorm
@@ -61,6 +72,7 @@ func (gorm *GORM) Register(profile *Profile) *GORM {
 	if profile.Reflector == nil {
 		panic(errors.New("reflector params must be provided"))
 	}
+	profile.docs = &[]Doc{}
 	gorm.m = append(gorm.m, profile)
 	return gorm
 }
@@ -95,8 +107,8 @@ func (gorm *GORM) Var(name string) interface{} {
 }
 
 // openDB get gorm connect session
-func openSession(cfg *Config) *jzgorm.DB {
-	db, err := jzgorm.Open(cfg.DBType, cfg.URL)
+func openSession(cfg *Config) *gorm.DB {
+	db, err := gorm.Open(cfg.DBType, cfg.URL)
 	if err != nil {
 		panic(err)
 	}
