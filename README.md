@@ -1,6 +1,25 @@
+## Directory
+
+<!-- TOC -->
+
+- [Directory](#directory)
+- [bulrush-addition](#bulrush-addition)
+    - [mgo](#mgo)
+    - [gorm](#gorm)
+    - [logger](#logger)
+    - [redis](#redis)
+    - [apidoc](#apidoc)
+        - [Install apidoc](#install-apidoc)
+        - [Add ignore to .igonre file](#add-ignore-to-igonre-file)
+        - [Generate apidoc](#generate-apidoc)
+        - [Use apidoc plugin](#use-apidoc-plugin)
+- [MIT License](#mit-license)
+
+<!-- /TOC -->
+
 ## bulrush-addition
-~Provides the ability to expose default interfaces based on database-driven wrappers
-~
+	Provides the ability to expose default interfaces based on database-driven wrappers
+
 ### mgo
 
 **create mgoext**
