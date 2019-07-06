@@ -53,16 +53,27 @@ type (
 		Reflector  interface{}
 		BanHook    bool
 		Opts       *Opts
+		docs       *[]Doc
 	}
 )
 
+// Docs defined Docs for bulrush
+func (mgo *Mongo) Docs() *[]Doc {
+	docs := []Doc{}
+	funk.ForEach(mgo.m, func(item *Profile) {
+		docs = append(docs, *item.docs...)
+	})
+	return &docs
+}
+
 // Plugin defined plugin for bulrush
-func (mgo *Mongo) Plugin(r *gin.RouterGroup) {
+func (mgo *Mongo) Plugin(r *gin.RouterGroup) *Mongo {
 	funk.ForEach(mgo.m, func(item *Profile) {
 		if !item.BanHook {
 			mgo.API.ALL(r, item.Name)
 		}
 	})
+	return mgo
 }
 
 // Init mgo
@@ -80,6 +91,7 @@ func (mgo *Mongo) Register(profile *Profile) *Mongo {
 	if profile.Reflector == nil {
 		panic(errors.New("reflector params must be provided"))
 	}
+	profile.docs = &[]Doc{}
 	mgo.m = append(mgo.m, profile)
 	return mgo
 }

@@ -6,7 +6,7 @@ package mgoext
 
 // Model common fields
 type Model struct {
-	Created  int `bson:"_created" form:"_created" json:"_created" xml:"_created"`
-	Modified int `bson:"_modified" form:"_modified" json:"_modified" xml:"_modified"`
-	Deleted  int `bson:"_deleted" form:"_deleted" json:"_deleted" xml:"_deleted"`
+	Created  int `bson:"_created,comment:创建时间,"`
+	Modified int `bson:"_modified,comment:修改时间,"`
+	Deleted  int `bson:"_deleted,comment:删除时间,"`
 }

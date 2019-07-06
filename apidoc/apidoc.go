@@ -10,8 +10,11 @@ import (
 	"io/ioutil"
 	"path"
 
+	"github.com/thoas/go-funk"
+
 	"github.com/2637309949/bulrush-addition/apidoc/template"
 	gormext "github.com/2637309949/bulrush-addition/gorm"
+	mgoext "github.com/2637309949/bulrush-addition/mgo"
 	"github.com/gin-gonic/gin"
 )
 
@@ -42,7 +45,7 @@ func (api *APIDoc) Doc(dir string) *APIDoc {
 	return api
 }
 
-func (api *APIDoc) writeSysDoc(docs *[]gormext.Doc) *APIDoc {
+func (api *APIDoc) writeSysDoc(docs []interface{}) *APIDoc {
 	apiData := struct {
 		API interface{} `json:"api" yaml:"api"`
 	}{
@@ -64,9 +67,16 @@ func (api *APIDoc) Init(init func(*APIDoc)) *APIDoc {
 }
 
 // Plugin for doc
-func (api *APIDoc) Plugin(httpProxy *gin.Engine, gormext *gormext.GORM) *APIDoc {
+func (api *APIDoc) Plugin(httpProxy *gin.Engine, ext1 *gormext.GORM, ext2 *mgoext.Mongo) *APIDoc {
 	template.Handler.Prefix = api.Prefix
-	api.writeSysDoc(gormext.Docs())
+	docs := []interface{}{}
+	funk.ForEach(*ext1.Docs(), func(doc gormext.Doc) {
+		docs = append(docs, doc)
+	})
+	funk.ForEach(*ext2.Docs(), func(doc mgoext.Doc) {
+		docs = append(docs, doc)
+	})
+	api.writeSysDoc(docs)
 	httpProxy.GET(api.Prefix+"/*any", func(c *gin.Context) {
 		template.Handler.ServeHTTP(c.Writer, c.Request)
 	})

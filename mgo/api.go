@@ -563,6 +563,7 @@ func (ai *API) One(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 	h.Auth(routeHooks.List.Auth)
 	handlers = append(handlers, h.R)
 	r.GET(routePrefixs.One(name), handlers...)
+	*profile.docs = append(*profile.docs, *GenDoc(profile, routePrefixs, "one")...)
 	return h
 }
 
@@ -588,6 +589,7 @@ func (ai *API) List(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc
 	h.Auth(routeHooks.List.Auth)
 	handlers = append(handlers, h.R)
 	r.GET(routePrefixs.List(name), handlers...)
+	*profile.docs = append(*profile.docs, *GenDoc(profile, routePrefixs, "list")...)
 	return h
 }
 
@@ -613,6 +615,7 @@ func (ai *API) Create(r *gin.RouterGroup, name string, handlers ...gin.HandlerFu
 	h.Auth(routeHooks.List.Auth)
 	handlers = append(handlers, h.R)
 	r.POST(routePrefixs.Create(name), handlers...)
+	*profile.docs = append(*profile.docs, *GenDoc(profile, routePrefixs, "create")...)
 	return h
 }
 
@@ -638,6 +641,7 @@ func (ai *API) Update(r *gin.RouterGroup, name string, handlers ...gin.HandlerFu
 	h.Auth(routeHooks.List.Auth)
 	handlers = append(handlers, h.R)
 	r.PUT(routePrefixs.Update(name), handlers...)
+	*profile.docs = append(*profile.docs, *GenDoc(profile, routePrefixs, "update")...)
 	return h
 }
 
@@ -663,6 +667,7 @@ func (ai *API) Delete(r *gin.RouterGroup, name string, handlers ...gin.HandlerFu
 	h.Auth(routeHooks.List.Auth)
 	handlers = append(handlers, h.R)
 	r.DELETE(routePrefixs.Delete(name), handlers...)
+	*profile.docs = append(*profile.docs, *GenDoc(profile, routePrefixs, "delete")...)
 	return h
 }
 
@@ -733,5 +738,6 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 		h1.Auth(h.auth)
 		h1.R(c)
 	}, handlers)...)
+	*profile.docs = append(*profile.docs, *GenDoc(profile, routePrefixs, "one", "list", "create", "update", "delete")...)
 	return h
 }

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-package gormext
+package mgoext
 
 import (
 	"fmt"
@@ -70,9 +70,9 @@ func fieldScope(structType reflect.Type, items *[]FieldsParameter) {
 			if index == 0 && fieldType.Kind() == reflect.Struct {
 				fieldScope(fieldType, items)
 			} else {
-				optional := strings.Contains(field.Tag.Get("gorm"), "not null")
-				descArr := findStringSubmatch(`comment:(.*?);`, field.Tag.Get("gorm"))
-				enumArr := findStringSubmatch(`enum:(.*?);`, field.Tag.Get("gorm"))
+				optional := strings.Contains(field.Tag.Get("bson"), "not null")
+				descArr := findStringSubmatch(`comment:(.*?),`, field.Tag.Get("bson"))
+				enumArr := findStringSubmatch(`enum:(.*?),`, field.Tag.Get("bson"))
 				desc := ""
 				if len(descArr) > 0 {
 					desc = descArr[0]
@@ -114,8 +114,8 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 				URL:        routePrefixs.One(profile.Name),
 				Title:      fmt.Sprintf("%s one", profile.Name),
 				Name:       fmt.Sprintf("%s one", profile.Name),
-				Group:      "Sql Default",
-				GroupTitle: "Sql Default",
+				Group:      "NoSql Default",
+				GroupTitle: "NoSql Default",
 				Version:    "0.0.0",
 				Parameter: Parameter{
 					Fields: Fields{
@@ -139,8 +139,8 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 				URL:        routePrefixs.List(profile.Name),
 				Title:      fmt.Sprintf("%s list", profile.Name),
 				Name:       fmt.Sprintf("%s list", profile.Name),
-				Group:      "Sql Default",
-				GroupTitle: "Sql Default",
+				Group:      "NoSql Default",
+				GroupTitle: "NoSql Default",
 				Version:    "0.0.0",
 				Parameter: Parameter{
 					Fields: Fields{
@@ -159,8 +159,8 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 				URL:        routePrefixs.Update(profile.Name),
 				Title:      fmt.Sprintf("%s update", profile.Name),
 				Name:       fmt.Sprintf("%s update", profile.Name),
-				Group:      "Sql Default",
-				GroupTitle: "Sql Default",
+				Group:      "NoSql Default",
+				GroupTitle: "NoSql Default",
 				Version:    "0.0.0",
 				Success: Success{
 					FieldsSuccess: FieldsSuccess{
@@ -179,8 +179,8 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 				URL:        routePrefixs.Create(profile.Name),
 				Title:      fmt.Sprintf("%s create", profile.Name),
 				Name:       fmt.Sprintf("%s create", profile.Name),
-				Group:      "Sql Default",
-				GroupTitle: "Sql Default",
+				Group:      "NoSql Default",
+				GroupTitle: "NoSql Default",
 				Version:    "0.0.0",
 				Success: Success{
 					FieldsSuccess: FieldsSuccess{
@@ -199,8 +199,8 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 				URL:        routePrefixs.Delete(profile.Name),
 				Title:      fmt.Sprintf("%s delete", profile.Name),
 				Name:       fmt.Sprintf("%s delete", profile.Name),
-				Group:      "Sql Default",
-				GroupTitle: "Sql Default",
+				Group:      "NoSql Default",
+				GroupTitle: "NoSql Default",
 				Version:    "0.0.0",
 				Success: Success{
 					FieldsSuccess: FieldsSuccess{
