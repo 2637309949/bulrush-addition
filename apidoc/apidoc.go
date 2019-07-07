@@ -21,7 +21,9 @@ import (
 type (
 	// APIDoc for apidoc
 	APIDoc struct {
-		Prefix string
+		Prefix  string
+		GORMExt *gormext.GORM
+		MGOExt  *mgoext.Mongo
 	}
 )
 
@@ -67,16 +69,22 @@ func (api *APIDoc) Init(init func(*APIDoc)) *APIDoc {
 }
 
 // Plugin for doc
-func (api *APIDoc) Plugin(httpProxy *gin.Engine, ext1 *gormext.GORM, ext2 *mgoext.Mongo) *APIDoc {
+func (api *APIDoc) Plugin(httpProxy *gin.Engine) *APIDoc {
 	template.Handler.Prefix = api.Prefix
 	docs := []interface{}{}
-	funk.ForEach(*ext1.Docs(), func(doc gormext.Doc) {
-		docs = append(docs, doc)
-	})
-	funk.ForEach(*ext2.Docs(), func(doc mgoext.Doc) {
-		docs = append(docs, doc)
-	})
-	api.writeSysDoc(docs)
+	if api.GORMExt != nil {
+		funk.ForEach(*api.GORMExt.Docs(), func(doc gormext.Doc) {
+			docs = append(docs, doc)
+		})
+	}
+	if api.MGOExt != nil {
+		funk.ForEach(*api.MGOExt.Docs(), func(doc mgoext.Doc) {
+			docs = append(docs, doc)
+		})
+	}
+	if len(docs) > 0 {
+		api.writeSysDoc(docs)
+	}
 	httpProxy.GET(api.Prefix+"/*any", func(c *gin.Context) {
 		template.Handler.ServeHTTP(c.Writer, c.Request)
 	})

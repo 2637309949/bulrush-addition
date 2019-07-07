@@ -114,7 +114,7 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 				URL:        routePrefixs.One(profile.Name),
 				Title:      fmt.Sprintf("%s one", profile.Name),
 				Name:       fmt.Sprintf("%s one", profile.Name),
-				Group:      "NoSql Default",
+				Group:      "NoSql",
 				GroupTitle: "NoSql Default",
 				Version:    "0.0.0",
 				Parameter: Parameter{
@@ -139,7 +139,7 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 				URL:        routePrefixs.List(profile.Name),
 				Title:      fmt.Sprintf("%s list", profile.Name),
 				Name:       fmt.Sprintf("%s list", profile.Name),
-				Group:      "NoSql Default",
+				Group:      "NoSql",
 				GroupTitle: "NoSql Default",
 				Version:    "0.0.0",
 				Parameter: Parameter{
@@ -159,7 +159,7 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 				URL:        routePrefixs.Update(profile.Name),
 				Title:      fmt.Sprintf("%s update", profile.Name),
 				Name:       fmt.Sprintf("%s update", profile.Name),
-				Group:      "NoSql Default",
+				Group:      "NoSql",
 				GroupTitle: "NoSql Default",
 				Version:    "0.0.0",
 				Success: Success{
@@ -179,7 +179,7 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 				URL:        routePrefixs.Create(profile.Name),
 				Title:      fmt.Sprintf("%s create", profile.Name),
 				Name:       fmt.Sprintf("%s create", profile.Name),
-				Group:      "NoSql Default",
+				Group:      "NoSql",
 				GroupTitle: "NoSql Default",
 				Version:    "0.0.0",
 				Success: Success{
@@ -199,7 +199,7 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 				URL:        routePrefixs.Delete(profile.Name),
 				Title:      fmt.Sprintf("%s delete", profile.Name),
 				Name:       fmt.Sprintf("%s delete", profile.Name),
-				Group:      "NoSql Default",
+				Group:      "NoSql",
 				GroupTitle: "NoSql Default",
 				Version:    "0.0.0",
 				Success: Success{
