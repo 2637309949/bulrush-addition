@@ -71,8 +71,8 @@ func fieldScope(structType reflect.Type, items *[]FieldsParameter) {
 				fieldScope(fieldType, items)
 			} else {
 				optional := strings.Contains(field.Tag.Get("gorm"), "not null")
-				descArr := findStringSubmatch(`comment:(.*?);`, field.Tag.Get("gorm"))
-				enumArr := findStringSubmatch(`enum:(.*?);`, field.Tag.Get("gorm"))
+				descArr := findStringSubmatch(`comment:'(.*?)'`, field.Tag.Get("gorm"))
+				enumArr := findStringSubmatch(`enum:'(.*?)'`, field.Tag.Get("gorm"))
 				desc := ""
 				if len(descArr) > 0 {
 					desc = descArr[0]

@@ -4,9 +4,16 @@
 
 package mgoext
 
+import (
+	"time"
+
+	"github.com/globalsign/mgo/bson"
+)
+
 // Model common fields
 type Model struct {
-	Created  int `bson:"_created,comment:创建时间,"`
-	Modified int `bson:"_modified,comment:修改时间,"`
-	Deleted  int `bson:"_deleted,comment:删除时间,"`
+	ID       bson.ObjectId `bson:"_id,omitempty" br:"comment:'模型ID'"`
+	Created  *time.Time    `bson:"_created" br:"comment:'创建时间'"`
+	Modified *time.Time    `bson:"_modified" br:"comment:'修改时间'"`
+	Deleted  *time.Time    `bson:"_deleted" br:"comment:'删除时间'"`
 }

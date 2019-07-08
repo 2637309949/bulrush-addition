@@ -6,11 +6,8 @@ package mgoext
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"strings"
-
-	"github.com/thoas/go-funk"
 
 	addition "github.com/2637309949/bulrush-addition"
 	"github.com/globalsign/mgo/bson"
@@ -29,6 +26,14 @@ type Query struct {
 	Page     int    `form:"page" json:"page" xml:"page"`
 	Size     int    `form:"size" json:"size" xml:"size"`
 	Range    string `form:"range" json:"range" xml:"range"`
+}
+
+// PreloadInfo defined preload unit
+type PreloadInfo struct {
+	Coll    string
+	Local   string
+	Foreign string
+	Up      string
 }
 
 // NewQuery defined return query with default
@@ -100,26 +105,30 @@ func (q *Query) BuildPipe(id string) ([]map[string]interface{}, error) {
 	if err != nil {
 		return []map[string]interface{}{}, err
 	}
-	if q.Range != "ALL" {
+	pipe = append(pipe, map[string]interface{}{
+		"$match": match,
+	})
+	related := q.BuildRelated()
+	if related != nil {
+		pipe = append(pipe, related...)
+	}
+	order := q.BuildOrder()
+	if order != nil {
 		pipe = append(pipe, map[string]interface{}{
-			"$match": match,
+			"$sort": order,
 		})
-		related := q.BuildRelated()
-		if related != nil {
-			pipe = append(pipe, related...)
-		}
-		order := q.BuildOrder()
-		if order != nil {
-			pipe = append(pipe, map[string]interface{}{
-				"$sort": order,
-			})
-		}
-		project := q.BuildProject()
-		if project != nil {
-			pipe = append(pipe, map[string]interface{}{
-				"$project": project,
-			})
-		}
+	}
+	project := q.BuildProject()
+	if project != nil {
+		pipe = append(pipe, map[string]interface{}{
+			"$project": project,
+		})
+	}
+	uProject := q.BuildUProject()
+	if uProject != nil {
+		pipe = append(pipe, map[string]interface{}{
+			"$project": uProject,
+		})
 	}
 	return pipe, nil
 }
@@ -159,26 +168,17 @@ func (q *Query) BuildRelated() []map[string]interface{} {
 		relatedArr := []map[string]interface{}{}
 		related := strings.Split(q.Related, ",")
 		for _, item := range related {
-			tag := fieldTag(q.model, item, "ref")
-			tagArr := strings.Split(tag, ";")
-			refModel := tagArr[0]
-			refUProject := strings.Join(findStringSubmatch(`up\((.*?)\)`, tag), ",")
-			if refUProject != "" {
-				refUProjectArr := strings.Split(refUProject, ",")
-				refUProjectArr = funk.Map(refUProjectArr, func(x string) string {
-					return fmt.Sprintf("%s.%s", item, x)
-				}).([]string)
-				refUProject = strings.Join(refUProjectArr, ",")
-				q.UProject = refUProject
-			}
-			if tag != "" {
-				uProject := q.BuildUProject()
+			preInfo := preloadInfo(q.model, item)
+			if preInfo != nil {
+				if preInfo.Up != "" {
+					q.UProject = strings.Join([]string{q.UProject, preInfo.Up}, ",")
+				}
 				relatedArr = append(relatedArr, []map[string]interface{}{
 					map[string]interface{}{
 						"$lookup": map[string]interface{}{
-							"from":         refModel,
-							"localField":   item,
-							"foreignField": "_id",
+							"from":         preInfo.Coll,
+							"localField":   preInfo.Local,
+							"foreignField": preInfo.Foreign,
 							"as":           item,
 						},
 					},
@@ -189,11 +189,6 @@ func (q *Query) BuildRelated() []map[string]interface{} {
 						},
 					},
 				}...)
-				if uProject != nil {
-					relatedArr = append(relatedArr, map[string]interface{}{
-						"$project": uProject,
-					})
-				}
 			}
 		}
 		return relatedArr

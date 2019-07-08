@@ -5,8 +5,12 @@
 package mgoext
 
 import (
+	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/thoas/go-funk"
@@ -42,22 +46,19 @@ func one(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	ret := map[string]interface{}{}
-	err = Model.Pipe(pipe).One(&ret)
+	err = Model.Pipe(pipe).One(one)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"pipe": pipe,
-		"one":  ret,
-	})
+	c.JSON(http.StatusOK, one)
 }
 
 func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	var match map[string]interface{}
 	Model := mgo.Model(name)
 	one := mgo.Var(name)
+	list := mgo.Vars(name)
 	q := NewQuery()
 	q.name = name
 	q.model = one
@@ -72,9 +73,7 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-
-	list := []map[string]interface{}{}
-	err = Model.Pipe(pipe).All(&list)
+	err = Model.Pipe(pipe).All(list)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -110,14 +109,27 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 
 func create(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	var form form
+	var list = mgo.Vars(name)
 	Model := mgo.Model(name)
-	if error := c.ShouldBind(&form); error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": error.Error()})
+	if err := c.ShouldBind(&form); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	docs := funk.Map(form.Docs, func(x interface{}) interface{} {
+
+	docsByte, err := json.Marshal(form.Docs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err := json.Unmarshal(docsByte, list); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	docs := funk.Map(reflect.ValueOf(list).Elem().Interface(), func(x interface{}) interface{} {
 		return x
 	}).([]interface{})
+
 	if err := Model.Insert(docs...); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -129,17 +141,33 @@ func create(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 
 func remove(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	var form form
+	var list = mgo.Vars(name)
 	Model := mgo.Model(name)
 	if error := c.ShouldBind(&form); error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": error.Error()})
 		return
 	}
 
-	ids := funk.Map(form.Docs, func(item map[string]interface{}) bson.ObjectId {
-		id := item["_id"].(string)
-		return bson.ObjectIdHex(id)
+	docsByte, err := json.Marshal(form.Docs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err := json.Unmarshal(docsByte, list); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	ids := funk.Map(reflect.ValueOf(list).Elem().Interface(), func(item interface{}) bson.ObjectId {
+		if vaule := reflect.ValueOf(item).FieldByName("ID"); vaule.IsValid() {
+			return vaule.Interface().(bson.ObjectId)
+		}
+		return bson.NewObjectId()
 	}).([]bson.ObjectId)
-	if err := Model.Update(bson.M{"_id": bson.M{"$in": ids}}, bson.M{"$set": bson.M{"_deleted": time.Now().Unix()}}); err != nil {
+
+	fmt.Println(ids)
+	if err := Model.Update(bson.M{"_id": bson.M{"$in": ids}}, bson.M{"$set": bson.M{"_deleted": time.Now()}}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
@@ -155,14 +183,57 @@ func update(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": error.Error()})
 		return
 	}
-	for _, item := range form.Docs {
-		id := item["_id"].(string)
-		delete(item, "_id")
-		if err := Model.Update(bson.M{"_id": bson.ObjectIdHex(id)}, bson.M{"$set": item}); err != nil {
+	funk.ForEach(form.Docs, func(x map[string]interface{}) {
+		// to struct
+		var one = mgo.Var(name)
+		docByte, err := json.Marshal(x)
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
-	}
+		if err := json.Unmarshal(docByte, one); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+
+		// to bson json
+		bsonByte, err := bson.Marshal(one)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		jsonmap := bson.M{}
+		if err := bson.Unmarshal(bsonByte, &jsonmap); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+
+		// select keys
+		for k := range jsonmap {
+			valueType := reflect.TypeOf(one).Elem()
+			field, _ := valueType.FieldByNameFunc(func(name string) bool {
+				field, _ := valueType.FieldByName(name)
+				tag := field.Tag.Get("bson")
+				bsonName := strings.Split(tag, ",")[0]
+				if bsonName == k {
+					return true
+				}
+				return false
+			})
+			_, ok := x[field.Name]
+			if !ok {
+				delete(jsonmap, k)
+			}
+		}
+
+		// update
+		id := jsonmap["_id"].(bson.ObjectId)
+		delete(jsonmap, "_id")
+		if err := Model.Update(bson.M{"_id": id}, bson.M{"$set": jsonmap}); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	})
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})
