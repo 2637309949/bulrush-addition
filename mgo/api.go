@@ -6,9 +6,6 @@ package mgoext
 
 import (
 	"fmt"
-	"time"
-
-	"github.com/thoas/go-funk"
 
 	"github.com/gin-gonic/gin"
 )
@@ -176,10 +173,6 @@ func (create *CreateHook) auth() func(c *gin.Context) bool {
 func (create *CreateHook) form() func(form form) form {
 	if create.Form == nil {
 		return func(form form) form {
-			form.Docs = funk.Map(form.Docs, func(i map[string]interface{}) map[string]interface{} {
-				i["updatedAt"] = time.Now()
-				return i
-			}).([]map[string]interface{})
 			return form
 		}
 	}
@@ -223,9 +216,6 @@ func (update *UpdateHook) form() func(form form) form {
 func (delete *DeleteHook) form() func(form) form {
 	if delete.Form == nil {
 		return func(form form) form {
-			form.Docs = funk.Map(form.Docs, func(map[string]interface{}) map[string]interface{} {
-				return map[string]interface{}{"deletedAt": time.Now()}
-			}).([]map[string]interface{})
 			return form
 		}
 	}

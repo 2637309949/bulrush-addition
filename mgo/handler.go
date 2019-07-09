@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"time"
 
+	addition "github.com/2637309949/bulrush-addition"
 	"github.com/thoas/go-funk"
 
 	"github.com/gin-gonic/gin"
@@ -27,6 +28,7 @@ func one(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	Model := mgo.Model(name)
 	one := mgo.Var(name)
 	if !bson.IsObjectIdHex(id) {
+		addition.RushLogger.Error("not a valid id")
 		c.JSON(http.StatusNotAcceptable, gin.H{"message": "not a valid id"})
 		return
 	}
@@ -39,13 +41,16 @@ func one(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	pipe, err := q.BuildPipe(id)
+	cond := opts.RouteHooks.One.Cond(map[string]interface{}{"_id": map[string]interface{}{"$oid": id}}, struct{ name string }{name: name})
+	pipe, err := q.BuildPipe(cond)
 	if err != nil {
+		addition.RushLogger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 	err = Model.Pipe(pipe).One(one)
 	if err != nil {
+		addition.RushLogger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
@@ -66,7 +71,8 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	pipe, err := q.BuildPipe("")
+	cond := opts.RouteHooks.List.Cond(map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}}, struct{ name string }{name: name})
+	pipe, err := q.BuildPipe(cond)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -76,14 +82,12 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-
-	match, err = q.BuildCond("")
+	match, err = q.BuildCond(cond)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 	totalrecords, _ := Model.Find(match).Count()
-
 	if q.Range != "ALL" {
 		totalpages := math.Ceil(float64(totalrecords) / float64(q.Size))
 		c.JSON(http.StatusOK, gin.H{
@@ -94,6 +98,7 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 			"totalrecords": totalrecords,
 			"cond":         q.CondMap,
 			"list":         list,
+			"pipe":         pipe,
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
@@ -113,21 +118,20 @@ func create(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-
+	form = opts.RouteHooks.Create.Form(form)
 	docsByte, err := json.Marshal(form.Docs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-
 	if err := json.Unmarshal(docsByte, list); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	docs := funk.Map(reflect.ValueOf(list).Elem().Interface(), func(x interface{}) interface{} {
+	list = reflect.ValueOf(list).Elem().Interface()
+	docs := funk.Map(list, func(x interface{}) interface{} {
 		return x
 	}).([]interface{})
-
 	if err := Model.Insert(docs...); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -141,12 +145,11 @@ func remove(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	var form form
 	var one = mgo.Var(name)
 	Model := mgo.Model(name)
-
 	if err := c.ShouldBind(&form); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-
+	form = opts.RouteHooks.Delete.Form(form)
 	docs := funk.Map(form.Docs, func(x map[string]interface{}) interface{} {
 		fieldStructs := []reflect.StructField{}
 		for k := range x {
@@ -172,7 +175,6 @@ func remove(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "not exists this key in model"})
 		return
 	}
-
 	ids := funk.Map(docs, func(x interface{}) bson.ObjectId {
 		out := map[string]interface{}{}
 		bsonByte, err := bson.Marshal(x)
@@ -200,6 +202,7 @@ func update(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
+	form = opts.RouteHooks.Update.Form(form)
 	docs := funk.Map(form.Docs, func(x map[string]interface{}) interface{} {
 		fieldStructs := []reflect.StructField{}
 		for k := range x {

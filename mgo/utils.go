@@ -57,14 +57,19 @@ func preloadInfo(target interface{}, preload string) *PreloadInfo {
 	if !ok {
 		return nil
 	}
+	bsonName := strings.Split(field.Tag.Get("bson"), ",")[0]
 	refStr := findStringSubmatch(`ref\((.*?)\)`, field.Tag.Get("br"))
 	upStr := findStringSubmatch(`up\((.*?)\)`, field.Tag.Get("br"))
 	if len(refStr) > 0 {
 		refInfo := strings.Split(refStr[0], ",")
 		if len(refInfo) >= 2 {
 			info := &PreloadInfo{}
+			info.BsonName = preload
 			info.Coll = refInfo[0]
 			info.Local = refInfo[1]
+			if bsonName != "" {
+				info.BsonName = bsonName
+			}
 			if len(refInfo) > 2 {
 				info.Foreign = refInfo[2]
 			} else {
@@ -76,6 +81,11 @@ func preloadInfo(target interface{}, preload string) *PreloadInfo {
 					return fmt.Sprintf("%s.%s", preload, x)
 				}).([]string)
 				info.Up = strings.Join(upArr, ",")
+			}
+			if field.Type.Kind() == reflect.Ptr {
+				info.IsArray = field.Type.Elem().Kind() == reflect.Slice
+			} else {
+				info.IsArray = field.Type.Kind() == reflect.Slice
 			}
 			return info
 		}

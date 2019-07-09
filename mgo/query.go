@@ -32,10 +32,12 @@ type Query struct {
 
 // PreloadInfo defined preload unit
 type PreloadInfo struct {
-	Coll    string
-	Local   string
-	Foreign string
-	Up      string
+	BsonName string
+	IsArray  bool
+	Coll     string
+	Local    string
+	Foreign  string
+	Up       string
 }
 
 // NewQuery defined return query with default
@@ -117,10 +119,10 @@ func replaceKey(model interface{}, target interface{}, path string) interface{} 
 }
 
 // BuildCond defined select sql
-func (q *Query) BuildCond(id string) (map[string]interface{}, error) {
+func (q *Query) BuildCond(preCond ...map[string]interface{}) (map[string]interface{}, error) {
 	cond := map[string]interface{}{}
-	if id != "" {
-		cond["_id"] = map[string]interface{}{"$oid": id}
+	if len(preCond) > 0 {
+		cond = preCond[0]
 	}
 	var cloneCond map[string]interface{}
 	if q.Cond == "" {
@@ -136,28 +138,21 @@ func (q *Query) BuildCond(id string) (map[string]interface{}, error) {
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
-
-	fmt.Println("===")
-
 	err = addition.CopyMap(cond, &cloneCond)
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
-
 	cond = replaceOid(cond).(map[string]interface{})
-
 	cond = replaceKey(q.model, cond, "").(map[string]interface{})
-	fmt.Println("===")
-
 	fmt.Println(cond)
 	q.CondMap = cloneCond
 	return cond, nil
 }
 
 // BuildPipe defined pipe array
-func (q *Query) BuildPipe(id string) ([]map[string]interface{}, error) {
+func (q *Query) BuildPipe(preCond ...map[string]interface{}) ([]map[string]interface{}, error) {
 	pipe := []map[string]interface{}{}
-	match, err := q.BuildCond(id)
+	match, err := q.BuildCond(preCond...)
 	if err != nil {
 		return []map[string]interface{}{}, err
 	}
@@ -190,8 +185,8 @@ func (q *Query) BuildPipe(id string) ([]map[string]interface{}, error) {
 }
 
 // BuildPipeWithPage defined pipe array
-func (q *Query) BuildPipeWithPage(id string) ([]map[string]interface{}, error) {
-	pipe, err := q.BuildPipe(id)
+func (q *Query) BuildPipeWithPage(preCond ...map[string]interface{}) ([]map[string]interface{}, error) {
+	pipe, err := q.BuildPipe(preCond...)
 	pipe = append(pipe, map[string]interface{}{
 		"$skip": (q.Page - 1) * q.Size,
 	})
@@ -229,22 +224,62 @@ func (q *Query) BuildRelated() []map[string]interface{} {
 				if preInfo.Up != "" {
 					q.UProject = strings.Join([]string{q.UProject, preInfo.Up}, ",")
 				}
-				relatedArr = append(relatedArr, []map[string]interface{}{
-					map[string]interface{}{
-						"$lookup": map[string]interface{}{
-							"from":         preInfo.Coll,
-							"localField":   preInfo.Local,
-							"foreignField": preInfo.Foreign,
-							"as":           item,
+				if !preInfo.IsArray {
+					relatedArr = append(relatedArr, []map[string]interface{}{
+						map[string]interface{}{
+							"$lookup": map[string]interface{}{
+								"from":         preInfo.Coll,
+								"localField":   preInfo.Local,
+								"foreignField": preInfo.Foreign,
+								"as":           preInfo.BsonName,
+							},
 						},
-					},
-					map[string]interface{}{
-						"$unwind": map[string]interface{}{
-							"path":                       "$" + item,
-							"preserveNullAndEmptyArrays": true,
+						map[string]interface{}{
+							"$unwind": map[string]interface{}{
+								"path":                       "$" + preInfo.BsonName,
+								"preserveNullAndEmptyArrays": true,
+							},
 						},
-					},
-				}...)
+					}...)
+				} else {
+					group := map[string]interface{}{"_id": "$_id", "root": map[string]interface{}{"$first": "$$ROOT"}}
+					group[preInfo.BsonName] = map[string]interface{}{"$push": "$" + preInfo.BsonName}
+					addFields := map[string]interface{}{}
+					addFields["root."+preInfo.BsonName] = "$" + preInfo.BsonName
+					relatedArr = append(relatedArr, []map[string]interface{}{
+						map[string]interface{}{
+							"$unwind": map[string]interface{}{
+								"path":                       "$" + preInfo.Local,
+								"preserveNullAndEmptyArrays": true,
+							},
+						},
+						map[string]interface{}{
+							"$lookup": map[string]interface{}{
+								"from":         preInfo.Coll,
+								"localField":   preInfo.Local,
+								"foreignField": preInfo.Foreign,
+								"as":           preInfo.BsonName,
+							},
+						},
+						map[string]interface{}{
+							"$unwind": map[string]interface{}{
+								"path":                       "$" + preInfo.BsonName,
+								"preserveNullAndEmptyArrays": true,
+							},
+						},
+						map[string]interface{}{
+							"$group": group,
+						},
+						map[string]interface{}{
+							"$addFields": addFields,
+						},
+						map[string]interface{}{
+							"$replaceRoot": map[string]interface{}{
+								"newRoot": "$root",
+							},
+						},
+					}...)
+				}
 			}
 		}
 		return relatedArr
