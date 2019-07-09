@@ -6,7 +6,9 @@ package mgoext
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
+	"reflect"
 	"strings"
 
 	addition "github.com/2637309949/bulrush-addition"
@@ -46,29 +48,72 @@ func NewQuery() *Query {
 	}
 }
 
+func jsonDot(str1 string, str2 string) string {
+	if str1 == "" {
+		return str2
+	} else if str2 == "" {
+		return str1
+	}
+	return strings.Join([]string{str1, str2}, ".")
+}
+
 func replaceOid(target interface{}) interface{} {
-	targetOid, ok := target.(map[string]interface{})
-	if ok {
-		v, ok := targetOid["$oid"]
-		if ok {
-			return bson.ObjectIdHex(v.(string))
-		}
-	}
-
-	targetSlice, ok := target.([]map[string]interface{})
-	if ok {
-		for k, v := range targetSlice {
-			targetSlice[k] = replaceOid(v).(map[string]interface{})
-		}
-	}
-
 	targetMap, ok := target.(map[string]interface{})
 	if ok {
+		if v, ok := targetMap["$oid"]; ok {
+			return bson.ObjectIdHex(v.(string))
+		}
 		for k, v := range targetMap {
 			targetMap[k] = replaceOid(v)
 		}
+		return targetMap
 	}
-	return targetMap
+	targetSlice, ok := target.([]interface{})
+	if ok {
+		for k, v := range targetSlice {
+			targetSlice[k] = replaceOid(v)
+		}
+		return targetSlice
+	}
+	return target
+}
+
+func mapKey(mType reflect.Type, path string) string {
+	if mType.Kind() == reflect.Ptr || mType.Kind() == reflect.Slice {
+		mType = mType.Elem()
+	}
+	if path == "" {
+		return ""
+	}
+	first := strings.Split(path, ".")[0]
+	remain := strings.Join(strings.Split(path, ".")[1:], ".")
+	if field := findFieldStruct(mType, first); field != nil {
+		bsonName := strings.Split(field.Tag.Get("bson"), ",")[0]
+		return jsonDot(bsonName, mapKey(field.Type, remain))
+	}
+	return jsonDot(first, mapKey(mType, remain))
+}
+
+func replaceKey(model interface{}, target interface{}, path string) interface{} {
+	targetMap, ok := target.(map[string]interface{})
+	if ok {
+		for k, v := range targetMap {
+			if !strings.Contains(k, "$") {
+				delete(targetMap, k)
+				k = mapKey(reflect.TypeOf(model), k)
+			}
+			targetMap[k] = replaceKey(model, v, jsonDot(path, k))
+		}
+		return targetMap
+	}
+	targetSlice, ok := target.([]interface{})
+	if ok {
+		for k, v := range targetSlice {
+			targetSlice[k] = replaceKey(model, v, jsonDot(path, ""))
+		}
+		return targetSlice
+	}
+	return target
 }
 
 // BuildCond defined select sql
@@ -85,15 +130,26 @@ func (q *Query) BuildCond(id string) (map[string]interface{}, error) {
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
+	fmt.Println("===")
+
 	err = json.Unmarshal([]byte(unescapeWhere), &cond)
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
+
+	fmt.Println("===")
+
 	err = addition.CopyMap(cond, &cloneCond)
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
+
 	cond = replaceOid(cond).(map[string]interface{})
+
+	cond = replaceKey(q.model, cond, "").(map[string]interface{})
+	fmt.Println("===")
+
+	fmt.Println(cond)
 	q.CondMap = cloneCond
 	return cond, nil
 }

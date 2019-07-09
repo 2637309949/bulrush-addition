@@ -82,3 +82,25 @@ func preloadInfo(target interface{}, preload string) *PreloadInfo {
 	}
 	return nil
 }
+
+func findFieldStruct(vType reflect.Type, name string) *reflect.StructField {
+	if vType.Kind() == reflect.Ptr {
+		vType = vType.Elem()
+	}
+	if vType.Kind() == reflect.Struct {
+		numField := vType.NumField()
+		if numField > 0 {
+			field, ok := vType.FieldByName(name)
+			if ok {
+				return &field
+			}
+			field = vType.Field(0)
+			return findFieldStruct(field.Type, name)
+		}
+	}
+	return nil
+}
+
+func createStruct(sfs []reflect.StructField) interface{} {
+	return reflect.New(reflect.StructOf(sfs)).Interface()
+}

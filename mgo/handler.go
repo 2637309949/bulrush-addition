@@ -6,11 +6,9 @@ package mgoext
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
 	"net/http"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/thoas/go-funk"
@@ -141,32 +139,50 @@ func create(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 
 func remove(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	var form form
-	var list = mgo.Vars(name)
+	var one = mgo.Var(name)
 	Model := mgo.Model(name)
-	if error := c.ShouldBind(&form); error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": error.Error()})
-		return
-	}
 
-	docsByte, err := json.Marshal(form.Docs)
-	if err != nil {
+	if err := c.ShouldBind(&form); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
-	if err := json.Unmarshal(docsByte, list); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	ids := funk.Map(reflect.ValueOf(list).Elem().Interface(), func(item interface{}) bson.ObjectId {
-		if vaule := reflect.ValueOf(item).FieldByName("ID"); vaule.IsValid() {
-			return vaule.Interface().(bson.ObjectId)
+	docs := funk.Map(form.Docs, func(x map[string]interface{}) interface{} {
+		fieldStructs := []reflect.StructField{}
+		for k := range x {
+			fieldStruct := findFieldStruct(reflect.TypeOf(one), k)
+			if fieldStruct == nil {
+				return nil
+			}
+			fieldStructs = append(fieldStructs, *fieldStruct)
 		}
-		return bson.NewObjectId()
+		nx := createStruct(fieldStructs)
+		jsonByte, err := json.Marshal(x)
+		err = json.Unmarshal(jsonByte, nx)
+		if err != nil {
+			return nil
+		}
+		return nx
+	}).([]interface{})
+	docs = funk.Filter(docs, func(x interface{}) bool {
+		return x != nil
+	}).([]interface{})
+
+	if len(docs) != len(form.Docs) {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "not exists this key in model"})
+		return
+	}
+
+	ids := funk.Map(docs, func(x interface{}) bson.ObjectId {
+		out := map[string]interface{}{}
+		bsonByte, err := bson.Marshal(x)
+		bson.Unmarshal(bsonByte, &out)
+		if err != nil {
+			return bson.NewObjectId()
+		}
+		return out["_id"].(bson.ObjectId)
 	}).([]bson.ObjectId)
 
-	fmt.Println(ids)
 	if err := Model.Update(bson.M{"_id": bson.M{"$in": ids}}, bson.M{"$set": bson.M{"_deleted": time.Now()}}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -179,57 +195,41 @@ func remove(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 func update(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	var form form
 	Model := mgo.Model(name)
-	if error := c.ShouldBind(&form); error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": error.Error()})
+	var one = mgo.Var(name)
+	if err := c.ShouldBind(&form); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	funk.ForEach(form.Docs, func(x map[string]interface{}) {
-		// to struct
-		var one = mgo.Var(name)
-		docByte, err := json.Marshal(x)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		if err := json.Unmarshal(docByte, one); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-
-		// to bson json
-		bsonByte, err := bson.Marshal(one)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		jsonmap := bson.M{}
-		if err := bson.Unmarshal(bsonByte, &jsonmap); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-
-		// select keys
-		for k := range jsonmap {
-			valueType := reflect.TypeOf(one).Elem()
-			field, _ := valueType.FieldByNameFunc(func(name string) bool {
-				field, _ := valueType.FieldByName(name)
-				tag := field.Tag.Get("bson")
-				bsonName := strings.Split(tag, ",")[0]
-				if bsonName == k {
-					return true
-				}
-				return false
-			})
-			_, ok := x[field.Name]
-			if !ok {
-				delete(jsonmap, k)
+	docs := funk.Map(form.Docs, func(x map[string]interface{}) interface{} {
+		fieldStructs := []reflect.StructField{}
+		for k := range x {
+			fieldStruct := findFieldStruct(reflect.TypeOf(one), k)
+			if fieldStruct == nil {
+				return nil
 			}
+			fieldStructs = append(fieldStructs, *fieldStruct)
 		}
+		nx := createStruct(fieldStructs)
+		jsonByte, err := json.Marshal(x)
+		err = json.Unmarshal(jsonByte, nx)
+		if err != nil {
+			return nil
+		}
+		return nx
+	}).([]interface{})
+	docs = funk.Filter(docs, func(x interface{}) bool {
+		return x != nil
+	}).([]interface{})
 
-		// update
-		id := jsonmap["_id"].(bson.ObjectId)
-		delete(jsonmap, "_id")
-		if err := Model.Update(bson.M{"_id": id}, bson.M{"$set": jsonmap}); err != nil {
+	if len(docs) != len(form.Docs) {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "not exists this key in model"})
+		return
+	}
+	funk.ForEach(docs, func(x interface{}) {
+		out := map[string]interface{}{}
+		bsonByte, err := bson.Marshal(x)
+		bson.Unmarshal(bsonByte, &out)
+		if err = Model.Update(bson.M{"_id": out["_id"]}, bson.M{"$set": out}); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
