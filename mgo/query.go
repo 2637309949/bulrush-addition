@@ -132,8 +132,6 @@ func (q *Query) BuildCond(preCond ...map[string]interface{}) (map[string]interfa
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
-	fmt.Println("===")
-
 	err = json.Unmarshal([]byte(unescapeWhere), &cond)
 	if err != nil {
 		return map[string]interface{}{}, err
