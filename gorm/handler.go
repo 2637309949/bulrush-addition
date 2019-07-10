@@ -157,9 +157,9 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	}
 }
 
-func create(name string, c *gin.Context, gorm *GORM, opts *Opts) {
+func create(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	var form form
-	binds := gorm.Vars(name)
+	list := ext.Vars(name)
 	if err := c.ShouldBindJSON(&form); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -170,28 +170,29 @@ func create(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	if err := json.Unmarshal(docsByte, binds); err != nil {
+	if err := json.Unmarshal(docsByte, list); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 	validate := validator.New()
-	count := reflect.ValueOf(binds).Elem().Len()
-	tx := gorm.DB.Begin()
-	for count > 0 {
-		count = count - 1
-		ele := reflect.ValueOf(binds).Elem().Index(count).Interface()
-		ptr := reflect.New(reflect.TypeOf(ele))
-		ptr.Elem().Set(reflect.ValueOf(ele))
-		err := validate.Struct(ptr)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		if err := tx.Create(ptr.Interface()).Error; err != nil {
+	listValue := reflect.ValueOf(list).Elem()
+	count := listValue.Len()
+	tx := ext.DB.Begin()
+	for index := 0; index < count; index++ {
+		item := listValue.Index(index).Interface()
+		if err := validate.Struct(item); err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
+		newValue := reflect.New(reflect.TypeOf(item))
+		newValue.Elem().Set(reflect.ValueOf(item))
+		if err := tx.Create(newValue.Interface()).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+
 	}
 	err = tx.Commit().Error
 	if err != nil {

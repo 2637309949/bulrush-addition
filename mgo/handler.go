@@ -194,7 +194,7 @@ func remove(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 func update(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	var form form
 	Model := mgo.Model(name)
-	var one = mgo.Var(name)
+	one := mgo.Var(name)
 	if err := c.ShouldBind(&form); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
