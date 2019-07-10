@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/thoas/go-funk"
 )
 
 func formatString(key string, instruct string, value string) string {
@@ -20,7 +22,14 @@ func formatFloat64(key string, instruct string, value interface{}) string {
 }
 
 func formatArray(key string, instruct string, value interface{}) string {
-	return fmt.Sprintf("%s %s %v", key, instruct, value)
+	items := funk.Map(value, func(item interface{}) string {
+		fmt.Println(reflect.TypeOf(item).Kind())
+		if reflect.TypeOf(item).Kind() == reflect.String {
+			return fmt.Sprintf("'%s'", item)
+		}
+		return fmt.Sprintf("%v", item)
+	}).([]string)
+	return fmt.Sprintf("%s %s (%v)", key, instruct, strings.Join(items, ","))
 }
 
 // check whether is least or not

@@ -6,6 +6,7 @@ package gormext
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"reflect"
@@ -96,6 +97,7 @@ func list(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 			db = db.Preload(pre)
 		}
 	}
+	fmt.Println("sql = ", sql)
 	if sql != "" {
 		db = db.Where(sql)
 	}
