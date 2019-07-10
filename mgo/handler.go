@@ -6,7 +6,6 @@ package mgoext
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
 	"net/http"
 	"reflect"
@@ -41,8 +40,7 @@ func one(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	cond := opts.RouteHooks.One.Cond(map[string]interface{}{"_id": map[string]interface{}{"$oid": id}}, struct{ name string }{name: name})
-	fmt.Println("cond = ", cond)
+	cond := opts.RouteHooks.One.Cond(map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}, "ID": map[string]interface{}{"$oid": id}}, struct{ name string }{name: name})
 	pipe, err := q.BuildPipe(cond)
 	if err != nil {
 		addition.RushLogger.Error(err.Error())
@@ -65,9 +63,7 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	q := NewQuery()
 	q.name = name
 	q.model = one
-
-	err := c.ShouldBindQuery(q)
-	if err != nil {
+	if err := c.ShouldBindQuery(q); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}

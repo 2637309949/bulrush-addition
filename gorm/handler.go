@@ -6,7 +6,6 @@ package gormext
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
 	"net/http"
 	"reflect"
@@ -28,7 +27,7 @@ type form struct {
 func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	db := ext.DB
 	one := ext.Var(name)
-	q := Query{}
+	q := NewQuery()
 	key := findStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
 	id, err := strconv.Atoi(c.Param(key))
 	if err != nil {
@@ -37,6 +36,16 @@ func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		return
 	}
 	if err = c.BindQuery(&q); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	if err := q.BuildCond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}, "id": id}); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	q.CondMap = opts.RouteHooks.One.Cond(q.CondMap, struct{ name string }{name: name})
+	sql, err := q.FlatWhere()
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
@@ -53,7 +62,7 @@ func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		})
 		return db
 	}).Scopes(func(db *gorm.DB) *gorm.DB {
-		return db.Where(opts.RouteHooks.One.Cond(map[string]interface{}{"id": id}, struct{ name string }{name: name}))
+		return db.Where(sql)
 	}).First(one)
 
 	if err := db.Error; err != nil {
@@ -63,19 +72,17 @@ func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	c.JSON(http.StatusOK, one)
 }
 
-func list(name string, c *gin.Context, gorm *GORM, opts *Opts) {
-	db := gorm.DB
-	q := Query{}
+func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
+	list := ext.Vars(name)
+	one := ext.Var(name)
 	totalrecords := 0
-	list := gorm.Vars(name)
-	one := gorm.Var(name)
-	err := c.BindQuery(&q)
-	if err != nil {
+	db := ext.DB
+	q := NewQuery()
+	if err := c.BindQuery(q); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	err = q.BuildCond()
-	if err != nil {
+	if err := q.BuildCond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
@@ -85,45 +92,41 @@ func list(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	if q.Range != "ALL" {
-		q.Range = "PAGE"
-		if q.Page == 0 {
-			q.Page = 1
+	db = db.Scopes(func(db *gorm.DB) *gorm.DB {
+		if q.Range != "ALL" {
+			db = db.Offset((q.Page - 1) * q.Size).Limit(q.Size)
 		}
-		if q.Size == 0 {
-			q.Size = 20
+		return db
+	}).Scopes(func(db *gorm.DB) *gorm.DB {
+		if q.Select != "" {
+			db = db.Select(q.Select)
 		}
-		db = db.Offset((q.Page - 1) * q.Size).Limit(q.Size)
-	}
-	if q.Select != "" {
-		db = db.Select(q.Select)
-	}
-	if q.BuildOrder() != "" {
-		db = db.Order(q.Order)
-	}
-	for _, pre := range q.BuildRelated() {
-		if pre != "" {
-			db = db.Preload(pre)
+		return db
+	}).Scopes(func(db *gorm.DB) *gorm.DB {
+		if q.BuildOrder() != "" {
+			db = db.Order(q.Order)
 		}
-	}
-	fmt.Println("sql = ", sql)
-	if sql != "" {
-		db = db.Where(sql)
-	}
-	if err := db.Find(list).Error; err != nil {
+		return db
+	}).Scopes(func(db *gorm.DB) *gorm.DB {
+		funk.ForEach(q.BuildRelated(), func(pre string) {
+			if pre != "" {
+				db = db.Preload(pre)
+			}
+		})
+		return db
+	}).Scopes(func(db *gorm.DB) *gorm.DB {
+		if sql != "" {
+			db = db.Where(sql)
+		}
+		return db
+	}).Find(list)
+	if err := db.Error; err != nil {
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
 	}
-	if err := gorm.DB.Model(one).Where(sql).Count(&totalrecords).Error; err != nil {
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-	}
-	if q.Select != "" {
-		list, err = q.BuildSelect(list)
+	if err := ext.DB.Model(one).Where(sql).Count(&totalrecords).Error; err != nil {
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return

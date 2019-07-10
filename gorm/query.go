@@ -10,8 +10,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/thoas/go-funk"
-
 	addition "github.com/2637309949/bulrush-addition"
 )
 
@@ -27,9 +25,22 @@ type Query struct {
 	Range   string `form:"range" json:"range" xml:"range"`
 }
 
+// NewQuery defined new query
+func NewQuery() *Query {
+	return &Query{
+		Page:  1,
+		Size:  20,
+		Range: "PAGE",
+		Order: "-created_at",
+	}
+}
+
 // BuildCond defined select sql
-func (q *Query) BuildCond() error {
-	var cond map[string]interface{}
+func (q *Query) BuildCond(preCond ...map[string]interface{}) error {
+	cond := map[string]interface{}{}
+	if len(preCond) > 0 {
+		cond = preCond[0]
+	}
 	if q.Cond == "" {
 		q.Cond = "%7B%7D"
 	}
@@ -74,23 +85,4 @@ func (q *Query) BuildOrder() string {
 // BuildRelated defined related sql for preLoad
 func (q *Query) BuildRelated() []string {
 	return strings.Split(q.Preload, ",")
-}
-
-// BuildSelect dfined build select fields
-func (q *Query) BuildSelect(list interface{}) ([]map[string]interface{}, error) {
-	var jArr []map[string]interface{}
-	jByte, err := json.Marshal(list)
-	err = json.Unmarshal(jByte, &jArr)
-	for _, jMap := range jArr {
-		for k := range jMap {
-			sels := strings.Split(q.Select, ",")
-			_, ok := funk.FindString(sels, func(s string) bool {
-				return s == k
-			})
-			if !ok {
-				delete(jMap, k)
-			}
-		}
-	}
-	return jArr, err
 }

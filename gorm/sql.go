@@ -13,8 +13,8 @@ import (
 	"github.com/thoas/go-funk"
 )
 
-func formatString(key string, instruct string, value string) string {
-	return fmt.Sprintf("%s %s '%s'", key, instruct, value)
+func formatString(key string, instruct string, value interface{}) string {
+	return fmt.Sprintf("%s %s '%v'", key, instruct, value)
 }
 
 func formatFloat64(key string, instruct string, value interface{}) string {
@@ -51,7 +51,7 @@ func isLeastDirect(key string, value interface{}) bool {
 // sql direct to sql string
 func direct2Sql(key string, instruct string, value interface{}) string {
 	if reflect.TypeOf(value).Kind() == reflect.String {
-		return formatString(key, instruct, value.(string))
+		return formatString(key, instruct, value)
 	}
 	if reflect.TypeOf(value).Kind() == reflect.Float64 {
 		return formatFloat64(key, instruct, value)
@@ -99,9 +99,13 @@ func direct2Sql(key string, instruct string, value interface{}) string {
 				subItem := direct2Sql(key, "like", v)
 				andJoin = append(andJoin, subItem)
 			}
-			if k == "$like" {
-				subItem := direct2Sql(key, "like", v)
-				andJoin = append(andJoin, subItem)
+			if k == "$exists" {
+				vb, ok := v.(bool)
+				if ok && vb {
+					andJoin = append(andJoin, fmt.Sprintf("%s is %s null", key, "no"))
+				} else {
+					andJoin = append(andJoin, fmt.Sprintf("%s is %s null", key, ""))
+				}
 			}
 		}
 		return strings.Join(andJoin, " and ")
