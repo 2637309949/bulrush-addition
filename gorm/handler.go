@@ -64,12 +64,12 @@ func list(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	err = q.BuildWhere()
+	err = q.BuildCond()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	q.WhereMap = opts.RouteHooks.List.Cond(q.WhereMap, struct{ name string }{name: name})
+	q.CondMap = opts.RouteHooks.List.Cond(q.CondMap, struct{ name string }{name: name})
 	sql, err := q.FlatWhere()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -126,21 +126,19 @@ func list(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 			"totalpages":   totalpages,
 			"size":         q.Size,
 			"totalrecords": totalrecords,
-			"where":        q.WhereMap,
+			"cond":         q.CondMap,
 			"select":       q.Select,
-			"related":      q.Related,
+			"preload":      q.Preload,
 			"list":         list,
-			"sql":          sql,
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
 			"range":        q.Range,
 			"totalrecords": totalrecords,
-			"where":        q.WhereMap,
+			"cond":         q.CondMap,
 			"select":       q.Select,
-			"related":      q.Related,
+			"preload":      q.Preload,
 			"list":         list,
-			"sql":          sql,
 		})
 	}
 }

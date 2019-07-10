@@ -17,39 +17,39 @@ import (
 
 // Query defined query std
 type Query struct {
-	Where    string `form:"where" json:"where" xml:"where"`
-	WhereMap map[string]interface{}
-	Select   string `form:"select" json:"select" xml:"select"`
-	Related  string `form:"related" json:"related" xml:"related"`
-	Order    string `form:"order" json:"order" xml:"order"`
-	Page     int    `form:"page" json:"page" xml:"page"`
-	Size     int    `form:"size" json:"size" xml:"size"`
-	Range    string `form:"range" json:"range" xml:"range"`
+	Cond    string `form:"cond" json:"cond" xml:"cond"`
+	CondMap map[string]interface{}
+	Select  string `form:"select" json:"select" xml:"select"`
+	Preload string `form:"preload" json:"preload" xml:"preload"`
+	Order   string `form:"order" json:"order" xml:"order"`
+	Page    int    `form:"page" json:"page" xml:"page"`
+	Size    int    `form:"size" json:"size" xml:"size"`
+	Range   string `form:"range" json:"range" xml:"range"`
 }
 
-// BuildWhere defined select sql
-func (q *Query) BuildWhere() error {
-	var where map[string]interface{}
-	if q.Where == "" {
-		q.Where = "%7B%7D"
+// BuildCond defined select sql
+func (q *Query) BuildCond() error {
+	var cond map[string]interface{}
+	if q.Cond == "" {
+		q.Cond = "%7B%7D"
 	}
-	unescapeWhere, err := url.QueryUnescape(q.Where)
+	unescapeCond, err := url.QueryUnescape(q.Cond)
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal([]byte(unescapeWhere), &where)
+	err = json.Unmarshal([]byte(unescapeCond), &cond)
 	if err != nil {
 		return err
 	}
-	q.WhereMap = where
+	q.CondMap = cond
 	return nil
 }
 
 // FlatWhere defined flat where to sql
 func (q *Query) FlatWhere() (string, error) {
-	var cloneWhere map[string]interface{}
-	err := addition.CopyMap(q.WhereMap, &cloneWhere)
-	flatWhere, err := flatAndToOr(cloneWhere)
+	var cloneCond map[string]interface{}
+	err := addition.CopyMap(q.CondMap, &cloneCond)
+	flatWhere, err := flatAndToOr(cloneCond)
 	if err != nil {
 		return "", err
 	}
@@ -73,7 +73,7 @@ func (q *Query) BuildOrder() string {
 
 // BuildRelated defined related sql for preLoad
 func (q *Query) BuildRelated() []string {
-	return strings.Split(q.Related, ",")
+	return strings.Split(q.Preload, ",")
 }
 
 // BuildSelect dfined build select fields

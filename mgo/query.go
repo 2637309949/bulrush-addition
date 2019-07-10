@@ -6,7 +6,6 @@ package mgoext
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"reflect"
 	"strings"
@@ -23,7 +22,7 @@ type Query struct {
 	CondMap  map[string]interface{}
 	Project  string `form:"project" json:"project" xml:"project"`
 	UProject string `form:"uproject" json:"uproject" xml:"uproject"`
-	Related  string `form:"related" json:"related" xml:"related"`
+	Preload  string `form:"preload" json:"preload" xml:"preload"`
 	Order    string `form:"order" json:"order" xml:"order"`
 	Page     int    `form:"page" json:"page" xml:"page"`
 	Size     int    `form:"size" json:"size" xml:"size"`
@@ -142,7 +141,6 @@ func (q *Query) BuildCond(preCond ...map[string]interface{}) (map[string]interfa
 	}
 	cond = replaceOid(cond).(map[string]interface{})
 	cond = replaceKey(q.model, cond, "").(map[string]interface{})
-	fmt.Println(cond)
 	q.CondMap = cloneCond
 	return cond, nil
 }
@@ -213,9 +211,9 @@ func (q *Query) BuildOrder() map[string]interface{} {
 
 // BuildRelated defined related sql for preLoad
 func (q *Query) BuildRelated() []map[string]interface{} {
-	if q.Related != "" {
+	if q.Preload != "" {
 		relatedArr := []map[string]interface{}{}
-		related := strings.Split(q.Related, ",")
+		related := strings.Split(q.Preload, ",")
 		for _, item := range related {
 			preInfo := preloadInfo(q.model, item)
 			if preInfo != nil {
@@ -244,26 +242,32 @@ func (q *Query) BuildRelated() []map[string]interface{} {
 					group[preInfo.BsonName] = map[string]interface{}{"$push": "$" + preInfo.BsonName}
 					addFields := map[string]interface{}{}
 					addFields["root."+preInfo.BsonName] = "$" + preInfo.BsonName
+					unwindLocal := map[string]interface{}{
+						"path":                       "$" + preInfo.Local,
+						"preserveNullAndEmptyArrays": true,
+					}
+					lookup := map[string]interface{}{
+						"from":         preInfo.Coll,
+						"localField":   preInfo.Local,
+						"foreignField": preInfo.Foreign,
+						"as":           preInfo.BsonName,
+					}
+					unwind := map[string]interface{}{
+						"path":                       "$" + preInfo.BsonName,
+						"preserveNullAndEmptyArrays": true,
+					}
+					replaceRoot := map[string]interface{}{
+						"newRoot": "$root",
+					}
 					relatedArr = append(relatedArr, []map[string]interface{}{
 						map[string]interface{}{
-							"$unwind": map[string]interface{}{
-								"path":                       "$" + preInfo.Local,
-								"preserveNullAndEmptyArrays": true,
-							},
+							"$unwind": unwindLocal,
 						},
 						map[string]interface{}{
-							"$lookup": map[string]interface{}{
-								"from":         preInfo.Coll,
-								"localField":   preInfo.Local,
-								"foreignField": preInfo.Foreign,
-								"as":           preInfo.BsonName,
-							},
+							"$lookup": lookup,
 						},
 						map[string]interface{}{
-							"$unwind": map[string]interface{}{
-								"path":                       "$" + preInfo.BsonName,
-								"preserveNullAndEmptyArrays": true,
-							},
+							"$unwind": unwind,
 						},
 						map[string]interface{}{
 							"$group": group,
@@ -272,9 +276,7 @@ func (q *Query) BuildRelated() []map[string]interface{} {
 							"$addFields": addFields,
 						},
 						map[string]interface{}{
-							"$replaceRoot": map[string]interface{}{
-								"newRoot": "$root",
-							},
+							"$replaceRoot": replaceRoot,
 						},
 					}...)
 				}

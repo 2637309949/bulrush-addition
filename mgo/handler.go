@@ -97,14 +97,15 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 			"size":         q.Size,
 			"totalrecords": totalrecords,
 			"cond":         q.CondMap,
+			"preload":      q.Preload,
 			"list":         list,
-			"pipe":         pipe,
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
 			"range":        q.Range,
 			"totalrecords": totalrecords,
 			"cond":         q.CondMap,
+			"preload":      q.Preload,
 			"list":         list,
 		})
 	}
