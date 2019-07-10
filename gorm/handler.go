@@ -214,12 +214,12 @@ func remove(name string, c *gin.Context, gorm *GORM, opts *Opts) {
 	form = opts.RouteHooks.Delete.Form(form)
 	tx := gorm.DB.Begin()
 	for _, item := range form.Docs {
-		id, ok := item["id"]
+		id, ok := item["ID"]
 		if !ok {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "no id found!"})
 			return
 		}
-		if err := tx.Model(bind).Where("id=?", id).Update(item).Error; err != nil {
+		if err := tx.Model(bind).Where("id=?", id).Update(map[string]interface{}{"deleted_at": time.Now()}).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return

@@ -223,8 +223,8 @@ func (update *UpdateHook) form() func(form form) form {
 func (delete *DeleteHook) form() func(form) form {
 	if delete.Form == nil {
 		return func(form form) form {
-			form.Docs = funk.Map(form.Docs, func(map[string]interface{}) map[string]interface{} {
-				return map[string]interface{}{"deletedAt": time.Now()}
+			form.Docs = funk.Map(form.Docs, func(doc map[string]interface{}) map[string]interface{} {
+				return doc
 			}).([]map[string]interface{})
 			return form
 		}

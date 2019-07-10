@@ -140,48 +140,22 @@ func create(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 
 func remove(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	var form form
-	var one = mgo.Var(name)
 	Model := mgo.Model(name)
 	if err := c.ShouldBind(&form); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 	form = opts.RouteHooks.Delete.Form(form)
-	docs := funk.Map(form.Docs, func(x map[string]interface{}) interface{} {
-		fieldStructs := []reflect.StructField{}
-		for k := range x {
-			fieldStruct := findFieldStruct(reflect.TypeOf(one), k)
-			if fieldStruct == nil {
-				return nil
-			}
-			fieldStructs = append(fieldStructs, *fieldStruct)
+	for _, item := range form.Docs {
+		_, ok := item["ID"]
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "no id found!"})
+			return
 		}
-		nx := createStruct(fieldStructs)
-		jsonByte, err := json.Marshal(x)
-		err = json.Unmarshal(jsonByte, nx)
-		if err != nil {
-			return nil
-		}
-		return nx
-	}).([]interface{})
-	docs = funk.Filter(docs, func(x interface{}) bool {
-		return x != nil
-	}).([]interface{})
-
-	if len(docs) != len(form.Docs) {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "not exists this key in model"})
-		return
 	}
-	ids := funk.Map(docs, func(x interface{}) bson.ObjectId {
-		out := map[string]interface{}{}
-		bsonByte, err := bson.Marshal(x)
-		bson.Unmarshal(bsonByte, &out)
-		if err != nil {
-			return bson.NewObjectId()
-		}
-		return out["_id"].(bson.ObjectId)
+	ids := funk.Map(form.Docs, func(x map[string]interface{}) bson.ObjectId {
+		return bson.ObjectIdHex(x["ID"].(string))
 	}).([]bson.ObjectId)
-
 	if err := Model.Update(bson.M{"_id": bson.M{"$in": ids}}, bson.M{"$set": bson.M{"_deleted": time.Now()}}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
