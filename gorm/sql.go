@@ -67,6 +67,10 @@ func direct2Sql(key string, instruct string, value interface{}) string {
 				subItem := direct2Sql(key, "=", v)
 				andJoin = append(andJoin, subItem)
 			}
+			if k == "$ne" {
+				subItem := direct2Sql(key, "<>", v)
+				andJoin = append(andJoin, subItem)
+			}
 			if k == "$gte" {
 				subItem := direct2Sql(key, ">=", v)
 				andJoin = append(andJoin, subItem)
@@ -89,6 +93,10 @@ func direct2Sql(key string, instruct string, value interface{}) string {
 			}
 			if k == "$regex" {
 				subItem := direct2Sql(key, "regexp", v)
+				andJoin = append(andJoin, subItem)
+			}
+			if k == "$like" {
+				subItem := direct2Sql(key, "like", v)
 				andJoin = append(andJoin, subItem)
 			}
 			if k == "$like" {

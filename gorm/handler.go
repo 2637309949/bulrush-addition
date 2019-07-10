@@ -15,6 +15,8 @@ import (
 
 	addition "github.com/2637309949/bulrush-addition"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
+	"github.com/thoas/go-funk"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -23,31 +25,38 @@ type form struct {
 	Category interface{}              `form:"category" json:"category" xml:"category" `
 }
 
-func one(name string, c *gin.Context, gorm *GORM, opts *Opts) {
-	db := gorm.DB
-	one := gorm.Var(name)
+func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
+	db := ext.DB
+	one := ext.Var(name)
 	q := Query{}
-	id, err := strconv.Atoi(c.Param("id"))
+	key := findStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
+	id, err := strconv.Atoi(c.Param(key))
 	if err != nil {
 		addition.RushLogger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	err = c.BindQuery(&q)
-	if err != nil {
+	if err = c.BindQuery(&q); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	if q.Select != "" {
-		db = db.Select(q.Select)
-	}
-	for _, pre := range q.BuildRelated() {
-		if pre != "" {
-			db = db.Preload(pre)
+	db = db.Scopes(func(db *gorm.DB) *gorm.DB {
+		if q.Select != "" {
+			return db.Select(q.Select)
 		}
-	}
-	cond := opts.RouteHooks.One.Cond(map[string]interface{}{"id": id}, struct{ name string }{name: name})
-	if err := db.First(one, cond).Error; err != nil {
+		return db
+	}).Scopes(func(db *gorm.DB) *gorm.DB {
+		funk.ForEach(q.BuildRelated(), func(pre string) {
+			if pre != "" {
+				db = db.Preload(pre)
+			}
+		})
+		return db
+	}).Scopes(func(db *gorm.DB) *gorm.DB {
+		return db.Where(opts.RouteHooks.One.Cond(map[string]interface{}{"id": id}, struct{ name string }{name: name}))
+	}).First(one)
+
+	if err := db.Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}

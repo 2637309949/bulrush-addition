@@ -6,6 +6,7 @@ package mgoext
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"reflect"
@@ -24,9 +25,10 @@ type form struct {
 }
 
 func one(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
-	id := c.Param("id")
 	Model := mgo.Model(name)
 	one := mgo.Var(name)
+	key := findStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
+	id := c.Param(key)
 	if !bson.IsObjectIdHex(id) {
 		addition.RushLogger.Error("not a valid id")
 		c.JSON(http.StatusNotAcceptable, gin.H{"message": "not a valid id"})
@@ -35,21 +37,19 @@ func one(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	q := NewQuery()
 	q.name = name
 	q.model = one
-
-	err := c.ShouldBindQuery(q)
-	if err != nil {
+	if err := c.BindQuery(q); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 	cond := opts.RouteHooks.One.Cond(map[string]interface{}{"_id": map[string]interface{}{"$oid": id}}, struct{ name string }{name: name})
+	fmt.Println("cond = ", cond)
 	pipe, err := q.BuildPipe(cond)
 	if err != nil {
 		addition.RushLogger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	err = Model.Pipe(pipe).One(one)
-	if err != nil {
+	if err = Model.Pipe(pipe).One(one); err != nil {
 		addition.RushLogger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
