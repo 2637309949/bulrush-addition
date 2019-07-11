@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"path"
+	"strings"
 
 	"github.com/thoas/go-funk"
 
@@ -86,6 +88,10 @@ func (api *APIDoc) Plugin(httpProxy *gin.Engine) *APIDoc {
 		api.writeSysDoc(docs)
 	}
 	httpProxy.GET(api.Prefix+"/*any", func(c *gin.Context) {
+		if strings.ReplaceAll(c.Request.URL.Path, api.Prefix, "") == "/" {
+			c.Redirect(http.StatusPermanentRedirect, "./index.html")
+			return
+		}
 		template.Handler.ServeHTTP(c.Writer, c.Request)
 	})
 	return api
