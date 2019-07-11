@@ -8,6 +8,7 @@ require (
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 	github.com/go-redis/redis v6.15.2+incompatible
 	github.com/jinzhu/gorm v1.9.9
+	github.com/kataras/go-events v0.0.2
 	github.com/stretchr/testify v1.3.0
 	github.com/thoas/go-funk v0.4.0
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7

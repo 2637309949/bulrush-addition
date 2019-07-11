@@ -9,6 +9,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kataras/go-events"
+)
+
+const (
+	// EventSysBulrushPluginI18NInit defined running event
+	EventSysBulrushPluginI18NInit = "EventSysBulrushPluginI18NInit"
 )
 
 // M defiend map
@@ -98,7 +104,7 @@ func (i18n *I18N) GetLocale(locale string) interface{} {
 }
 
 // Plugin defined Plugin func
-func (i18n *I18N) Plugin(httpProxy *gin.Engine, router *gin.RouterGroup) *I18N {
+func (i18n *I18N) Plugin(event events.EventEmmiter, httpProxy *gin.Engine, router *gin.RouterGroup) *I18N {
 	httpProxy.Use(func(c *gin.Context) {
 		if i18n.ctxLocale(c) != "" {
 			i18n.locale = i18n.ctxLocale(c)
@@ -111,6 +117,11 @@ func (i18n *I18N) Plugin(httpProxy *gin.Engine, router *gin.RouterGroup) *I18N {
 	router.GET(i18n.Prefix+"/:locale", func(c *gin.Context) {
 		locale := c.Param("locale")
 		c.JSON(http.StatusOK, i18n.locales[locale])
+	})
+	event.On(EventSysBulrushPluginI18NInit, func(message ...interface{}) {
+		if i18n.initFunc != nil {
+			i18n.initFunc()
+		}
 	})
 	return i18n
 }
