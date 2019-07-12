@@ -6,7 +6,6 @@ package mgoext
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"reflect"
 	"strings"
@@ -195,7 +194,6 @@ func (q *Query) BuildPipe() error {
 		})
 	}
 	q.BuildUProject()
-	fmt.Println("q.UProject = ", q.UProject)
 	if len(q.UProject) > 0 {
 		q.Pipe = append(q.Pipe, map[string]interface{}{
 			"$project": q.UProject,
