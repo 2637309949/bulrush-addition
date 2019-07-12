@@ -7,11 +7,11 @@
     - [mgo addition](#mgo-addition)
         - [Create mgoext](#create-mgoext)
         - [Use as a bulrush plugin](#use-as-a-bulrush-plugin)
-        - [Defined model and custom your own config](#defined-model-and-custom-your-own-config)
+        - [Defined model and custom your own config if you need](#defined-model-and-custom-your-own-config-if-you-need)
     - [gorm addition](#gorm-addition)
         - [Create gormext](#create-gormext)
         - [Use as a bulrush plugin](#use-as-a-bulrush-plugin-1)
-        - [Defined model and custom your own config](#defined-model-and-custom-your-own-config-1)
+        - [Defined model and custom your own config if you need](#defined-model-and-custom-your-own-config-if-you-need-1)
     - [Logger](#logger)
     - [Redis](#redis)
     - [Apidoc](#apidoc)
@@ -38,7 +38,7 @@ var MGOExt = mgoext.New(conf.Cfg)
 app.PostUse(addition.MGOExt)
 ```
 
-#### Defined model and custom your own config
+#### Defined model and custom your own config if you need
 ```go
 type User struct {
 	Base     `bson:",inline"`
@@ -109,7 +109,7 @@ var _ = addition.GORMExt.Register(&gormext.Profile{
 })
 ```
 
-#### Defined model and custom your own config
+#### Defined model and custom your own config if you need
 ```go
 // RegisterUser inject function
 func RegisterUser(r *gin.RouterGroup) {
