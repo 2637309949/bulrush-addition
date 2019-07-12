@@ -4,11 +4,11 @@
 
 - [Directory](#directory)
 - [bulrush-addition](#bulrush-addition)
-    - [Mgo](#mgo)
+    - [mgo addition](#mgo-addition)
         - [Create mgoext](#create-mgoext)
         - [Use as a bulrush plugin](#use-as-a-bulrush-plugin)
         - [Defined model and custom your own config](#defined-model-and-custom-your-own-config)
-    - [Gorm](#gorm)
+    - [gorm addition](#gorm-addition)
         - [Create gormext](#create-gormext)
         - [Use as a bulrush plugin](#use-as-a-bulrush-plugin-1)
         - [Defined model and custom your own config](#defined-model-and-custom-your-own-config-1)
@@ -26,7 +26,7 @@
 ## bulrush-addition
 	Provides the ability to expose default interfaces based on database-driven wrappers
 
-### Mgo
+### mgo addition
 
 #### Create mgoext
 ```go
@@ -72,7 +72,7 @@ func RegisterUser(r *gin.RouterGroup) {
 }
 ```
 
-### Gorm
+### gorm addition
 
 #### Create gormext
 ```go
