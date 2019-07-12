@@ -15,19 +15,44 @@ import (
 
 // Query defined query std
 type Query struct {
-	Cond    string `form:"cond" json:"cond" xml:"cond"`
-	CondMap map[string]interface{}
-	Select  string `form:"select" json:"select" xml:"select"`
-	Preload string `form:"preload" json:"preload" xml:"preload"`
-	Order   string `form:"order" json:"order" xml:"order"`
-	Page    int    `form:"page" json:"page" xml:"page"`
-	Size    int    `form:"size" json:"size" xml:"size"`
-	Range   string `form:"range" json:"range" xml:"range"`
+	Query struct {
+		Cond    string `form:"cond" json:"cond" xml:"cond"`
+		Select  string `form:"select" json:"select" xml:"select"`
+		Preload string `form:"preload" json:"preload" xml:"preload"`
+		Order   string `form:"order" json:"order" xml:"order"`
+		Page    int    `form:"page" json:"page" xml:"page"`
+		Size    int    `form:"size" json:"size" xml:"size"`
+		Range   string `form:"range" json:"range" xml:"range"`
+	}
+	Cond    map[string]interface{}
+	SQL     string
+	Select  string
+	Preload []string
+	Order   string
+	Page    int
+	Size    int
+	Range   string
 }
 
 // NewQuery defined new query
 func NewQuery() *Query {
 	return &Query{
+		Query: struct {
+			Cond    string `form:"cond" json:"cond" xml:"cond"`
+			Select  string `form:"select" json:"select" xml:"select"`
+			Preload string `form:"preload" json:"preload" xml:"preload"`
+			Order   string `form:"order" json:"order" xml:"order"`
+			Page    int    `form:"page" json:"page" xml:"page"`
+			Size    int    `form:"size" json:"size" xml:"size"`
+			Range   string `form:"range" json:"range" xml:"range"`
+		}{
+			Cond:  "%7B%7D",
+			Size:  20,
+			Page:  1,
+			Range: "PAGE",
+			Order: "-created_at",
+		},
+		Cond:  map[string]interface{}{},
 		Page:  1,
 		Size:  20,
 		Range: "PAGE",
@@ -35,43 +60,48 @@ func NewQuery() *Query {
 	}
 }
 
+// Build defined all build
+func (q *Query) Build(pre map[string]interface{}) error {
+	q.Page = q.Query.Page
+	q.Size = q.Query.Size
+	q.Range = q.Query.Range
+	err := q.BuildCond(pre)
+	q.BuildOrder()
+	q.BuildRelated()
+	return err
+}
+
 // BuildCond defined select sql
-func (q *Query) BuildCond(preCond ...map[string]interface{}) error {
-	cond := map[string]interface{}{}
-	if len(preCond) > 0 {
-		cond = preCond[0]
-	}
-	if q.Cond == "" {
-		q.Cond = "%7B%7D"
-	}
-	unescapeCond, err := url.QueryUnescape(q.Cond)
+func (q *Query) BuildCond(cond map[string]interface{}) error {
+	var clone map[string]interface{}
+	q.Cond = cond
+	unescapeCond, err := url.QueryUnescape(q.Query.Cond)
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal([]byte(unescapeCond), &cond)
+	err = json.Unmarshal([]byte(unescapeCond), &q.Cond)
 	if err != nil {
 		return err
 	}
-	q.CondMap = cond
+	if err = addition.CopyMap(q.Cond, &clone); err != nil {
+		return err
+	}
+	flatCond, err := flatAndToOr(clone)
+	if err != nil {
+		return err
+	}
+	sql, err := shuttle("", flatCond)
+	if err != nil {
+		return err
+	}
+	q.SQL = sql
 	return nil
 }
 
-// FlatWhere defined flat where to sql
-func (q *Query) FlatWhere() (string, error) {
-	var cloneCond map[string]interface{}
-	err := addition.CopyMap(q.CondMap, &cloneCond)
-	flatWhere, err := flatAndToOr(cloneCond)
-	if err != nil {
-		return "", err
-	}
-	sql, err := shuttle("", flatWhere)
-	return sql, err
-}
-
 // BuildOrder defined order sql
-func (q *Query) BuildOrder() string {
+func (q *Query) BuildOrder() {
 	var ordersWithDirect []string
-	orders := strings.Split(q.Order, ",")
+	orders := strings.Split(q.Query.Order, ",")
 	for _, item := range orders {
 		if strings.HasPrefix(item, "-") {
 			ordersWithDirect = append(ordersWithDirect, fmt.Sprintf("%s %s", strings.Replace(item, "-", "", 1), "desc"))
@@ -79,10 +109,10 @@ func (q *Query) BuildOrder() string {
 			ordersWithDirect = append(ordersWithDirect, strings.Replace(item, "+", "", 1))
 		}
 	}
-	return strings.Join(ordersWithDirect, ",")
+	q.Order = strings.Join(ordersWithDirect, ",")
 }
 
 // BuildRelated defined related sql for preLoad
-func (q *Query) BuildRelated() []string {
-	return strings.Split(q.Preload, ",")
+func (q *Query) BuildRelated() {
+	q.Preload = strings.Split(q.Query.Preload, ",")
 }

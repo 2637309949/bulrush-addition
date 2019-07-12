@@ -27,7 +27,6 @@ type form struct {
 func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	db := ext.DB
 	one := ext.Var(name)
-	q := NewQuery()
 	key := findStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
 	id, err := strconv.Atoi(c.Param(key))
 	if err != nil {
@@ -35,34 +34,32 @@ func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	if err = c.BindQuery(&q); err != nil {
+
+	q := NewQuery()
+	if err := c.BindQuery(&q.Query); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	if err := q.BuildCond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}, "id": id}); err != nil {
+	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}, "id": id}, struct{ name string }{name: name})
+	if err := q.Build(q.Cond); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	q.CondMap = opts.RouteHooks.One.Cond(q.CondMap, struct{ name string }{name: name})
-	sql, err := q.FlatWhere()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
+
 	db = db.Scopes(func(db *gorm.DB) *gorm.DB {
 		if q.Select != "" {
 			return db.Select(q.Select)
 		}
 		return db
 	}).Scopes(func(db *gorm.DB) *gorm.DB {
-		funk.ForEach(q.BuildRelated(), func(pre string) {
+		funk.ForEach(q.Preload, func(pre string) {
 			if pre != "" {
 				db = db.Preload(pre)
 			}
 		})
 		return db
 	}).Scopes(func(db *gorm.DB) *gorm.DB {
-		return db.Where(sql)
+		return db.Where(q.SQL)
 	}).First(one)
 
 	if err := db.Error; err != nil {
@@ -78,16 +75,12 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	totalrecords := 0
 	db := ext.DB
 	q := NewQuery()
-	if err := c.BindQuery(q); err != nil {
+	if err := c.BindQuery(&q.Query); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	if err := q.BuildCond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-	q.CondMap = opts.RouteHooks.List.Cond(q.CondMap, struct{ name string }{name: name})
-	sql, err := q.FlatWhere()
+	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}}, struct{ name string }{name: name})
+	err := q.Build(q.Cond)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -103,20 +96,20 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		}
 		return db
 	}).Scopes(func(db *gorm.DB) *gorm.DB {
-		if q.BuildOrder() != "" {
+		if q.Order != "" {
 			db = db.Order(q.Order)
 		}
 		return db
 	}).Scopes(func(db *gorm.DB) *gorm.DB {
-		funk.ForEach(q.BuildRelated(), func(pre string) {
+		funk.ForEach(q.Preload, func(pre string) {
 			if pre != "" {
 				db = db.Preload(pre)
 			}
 		})
 		return db
 	}).Scopes(func(db *gorm.DB) *gorm.DB {
-		if sql != "" {
-			db = db.Where(sql)
+		if q.SQL != "" {
+			db = db.Where(q.SQL)
 		}
 		return db
 	}).Find(list)
@@ -126,7 +119,7 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 			return
 		}
 	}
-	if err := ext.DB.Model(one).Where(sql).Count(&totalrecords).Error; err != nil {
+	if err := ext.DB.Model(one).Where(q.SQL).Count(&totalrecords).Error; err != nil {
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
@@ -140,7 +133,7 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 			"totalpages":   totalpages,
 			"size":         q.Size,
 			"totalrecords": totalrecords,
-			"cond":         q.CondMap,
+			"cond":         q.Cond,
 			"select":       q.Select,
 			"preload":      q.Preload,
 			"list":         list,
@@ -149,7 +142,7 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		c.JSON(http.StatusOK, gin.H{
 			"range":        q.Range,
 			"totalrecords": totalrecords,
-			"cond":         q.CondMap,
+			"cond":         q.Cond,
 			"select":       q.Select,
 			"preload":      q.Preload,
 			"list":         list,

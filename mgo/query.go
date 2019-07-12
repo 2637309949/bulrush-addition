@@ -6,27 +6,37 @@ package mgoext
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"reflect"
 	"strings"
 
-	addition "github.com/2637309949/bulrush-addition"
 	"github.com/globalsign/mgo/bson"
 )
 
 // Query defined query std
 type Query struct {
+	Query struct {
+		Cond     string `form:"cond" json:"cond" xml:"cond"`
+		Project  string `form:"project" json:"project" xml:"project"`
+		UProject string `form:"uproject" json:"uproject" xml:"uproject"`
+		Preload  string `form:"preload" json:"preload" xml:"preload"`
+		Order    string `form:"order" json:"order" xml:"order"`
+		Page     int    `form:"page" json:"page" xml:"page"`
+		Size     int    `form:"size" json:"size" xml:"size"`
+		Range    string `form:"range" json:"range" xml:"range"`
+	}
 	name     string
 	model    interface{}
-	Cond     string `form:"cond" json:"cond" xml:"cond"`
-	CondMap  map[string]interface{}
-	Project  string `form:"project" json:"project" xml:"project"`
-	UProject string `form:"uproject" json:"uproject" xml:"uproject"`
-	Preload  string `form:"preload" json:"preload" xml:"preload"`
-	Order    string `form:"order" json:"order" xml:"order"`
-	Page     int    `form:"page" json:"page" xml:"page"`
-	Size     int    `form:"size" json:"size" xml:"size"`
-	Range    string `form:"range" json:"range" xml:"range"`
+	Cond     map[string]interface{}
+	Pipe     []map[string]interface{}
+	Project  map[string]interface{}
+	UProject map[string]interface{}
+	Preload  string
+	Order    map[string]interface{}
+	Page     int
+	Size     int
+	Range    string
 }
 
 // PreloadInfo defined preload unit
@@ -42,10 +52,29 @@ type PreloadInfo struct {
 // NewQuery defined return query with default
 func NewQuery() *Query {
 	return &Query{
+		Query: struct {
+			Cond     string `form:"cond" json:"cond" xml:"cond"`
+			Project  string `form:"project" json:"project" xml:"project"`
+			UProject string `form:"uproject" json:"uproject" xml:"uproject"`
+			Preload  string `form:"preload" json:"preload" xml:"preload"`
+			Order    string `form:"order" json:"order" xml:"order"`
+			Page     int    `form:"page" json:"page" xml:"page"`
+			Size     int    `form:"size" json:"size" xml:"size"`
+			Range    string `form:"range" json:"range" xml:"range"`
+		}{
+			Cond:  "%7B%7D",
+			Size:  20,
+			Page:  1,
+			Range: "PAGE",
+			Order: "-_created",
+		},
 		Page:  1,
 		Size:  20,
 		Range: "PAGE",
-		Order: "_created",
+		Order: map[string]interface{}{
+			"_created": -1,
+		},
+		Pipe: []map[string]interface{}{},
 	}
 }
 
@@ -117,86 +146,75 @@ func replaceKey(model interface{}, target interface{}, path string) interface{} 
 	return target
 }
 
+// Build defined all build
+func (q *Query) Build(cond map[string]interface{}) error {
+	q.Page = q.Query.Page
+	q.Size = q.Query.Size
+	q.Range = q.Query.Range
+	q.Preload = q.Query.Preload
+
+	err := q.BuildCond(cond)
+	err = q.BuildPipe()
+	return err
+}
+
 // BuildCond defined select sql
-func (q *Query) BuildCond(preCond ...map[string]interface{}) (map[string]interface{}, error) {
-	cond := map[string]interface{}{}
-	if len(preCond) > 0 {
-		cond = preCond[0]
-	}
-	var cloneCond map[string]interface{}
-	if q.Cond == "" {
-		q.Cond = "%7B%7D"
-	}
-	unescapeWhere, err := url.QueryUnescape(q.Cond)
+func (q *Query) BuildCond(cond map[string]interface{}) error {
+	q.Cond = cond
+	unescapeWhere, err := url.QueryUnescape(q.Query.Cond)
 	if err != nil {
-		return map[string]interface{}{}, err
+		return err
 	}
-	err = json.Unmarshal([]byte(unescapeWhere), &cond)
-	if err != nil {
-		return map[string]interface{}{}, err
+	if err = json.Unmarshal([]byte(unescapeWhere), &q.Cond); err != nil {
+		return err
 	}
-	err = addition.CopyMap(cond, &cloneCond)
-	if err != nil {
-		return map[string]interface{}{}, err
-	}
-	cond = replaceOid(cond).(map[string]interface{})
-	cond = replaceKey(q.model, cond, "").(map[string]interface{})
-	q.CondMap = cloneCond
-	return cond, nil
+	q.Cond = replaceOid(q.Cond).(map[string]interface{})
+	q.Cond = replaceKey(q.model, q.Cond, "").(map[string]interface{})
+	return nil
 }
 
 // BuildPipe defined pipe array
-func (q *Query) BuildPipe(preCond ...map[string]interface{}) ([]map[string]interface{}, error) {
-	pipe := []map[string]interface{}{}
-	match, err := q.BuildCond(preCond...)
-	if err != nil {
-		return []map[string]interface{}{}, err
-	}
-	pipe = append(pipe, map[string]interface{}{
-		"$match": match,
+func (q *Query) BuildPipe() error {
+	q.Pipe = append(q.Pipe, map[string]interface{}{
+		"$match": q.Cond,
 	})
 	related := q.BuildRelated()
 	if related != nil {
-		pipe = append(pipe, related...)
+		q.Pipe = append(q.Pipe, related...)
 	}
-	order := q.BuildOrder()
-	if order != nil {
-		pipe = append(pipe, map[string]interface{}{
-			"$sort": order,
+	q.BuildOrder()
+	if len(q.Order) > 0 {
+		q.Pipe = append(q.Pipe, map[string]interface{}{
+			"$sort": q.Order,
 		})
 	}
-	project := q.BuildProject()
-	if project != nil {
-		pipe = append(pipe, map[string]interface{}{
-			"$project": project,
+	q.BuildProject()
+	if len(q.Project) > 0 {
+		q.Pipe = append(q.Pipe, map[string]interface{}{
+			"$project": q.Project,
 		})
 	}
-	uProject := q.BuildUProject()
-	if uProject != nil {
-		pipe = append(pipe, map[string]interface{}{
-			"$project": uProject,
+	q.BuildUProject()
+	fmt.Println("q.UProject = ", q.UProject)
+	if len(q.UProject) > 0 {
+		q.Pipe = append(q.Pipe, map[string]interface{}{
+			"$project": q.UProject,
 		})
 	}
-	return pipe, nil
-}
-
-// BuildPipeWithPage defined pipe array
-func (q *Query) BuildPipeWithPage(preCond ...map[string]interface{}) ([]map[string]interface{}, error) {
-	pipe, err := q.BuildPipe(preCond...)
-	pipe = append(pipe, map[string]interface{}{
+	q.Pipe = append(q.Pipe, map[string]interface{}{
 		"$skip": (q.Page - 1) * q.Size,
 	})
-	pipe = append(pipe, map[string]interface{}{
+	q.Pipe = append(q.Pipe, map[string]interface{}{
 		"$limit": q.Size,
 	})
-	return pipe, err
+	return nil
 }
 
 // BuildOrder defined order sql
-func (q *Query) BuildOrder() map[string]interface{} {
-	if q.Order != "" {
+func (q *Query) BuildOrder() {
+	if q.Query.Order != "" {
 		orderMap := map[string]interface{}{}
-		orders := strings.Split(q.Order, ",")
+		orders := strings.Split(q.Query.Order, ",")
 		for _, item := range orders {
 			if strings.HasPrefix(item, "-") {
 				orderMap[item] = -1
@@ -204,21 +222,20 @@ func (q *Query) BuildOrder() map[string]interface{} {
 				orderMap[item] = 1
 			}
 		}
-		return orderMap
+		q.Order = orderMap
 	}
-	return nil
 }
 
 // BuildRelated defined related sql for preLoad
 func (q *Query) BuildRelated() []map[string]interface{} {
-	if q.Preload != "" {
+	if q.Query.Preload != "" {
 		relatedArr := []map[string]interface{}{}
-		related := strings.Split(q.Preload, ",")
+		related := strings.Split(q.Query.Preload, ",")
 		for _, item := range related {
 			preInfo := preloadInfo(q.model, item)
 			if preInfo != nil {
 				if preInfo.Up != "" {
-					q.UProject = strings.Join([]string{q.UProject, preInfo.Up}, ",")
+					q.Query.UProject = strings.Join([]string{q.Query.UProject, preInfo.Up}, ",")
 				}
 				if !preInfo.IsArray {
 					relatedArr = append(relatedArr, []map[string]interface{}{
@@ -288,31 +305,29 @@ func (q *Query) BuildRelated() []map[string]interface{} {
 }
 
 // BuildProject dfined build select fields
-func (q *Query) BuildProject() map[string]interface{} {
-	projectMap := map[string]interface{}{}
-	if q.Project != "" {
-		projects := strings.Split(q.Project, ",")
+func (q *Query) BuildProject() {
+	Project := map[string]interface{}{}
+	if q.Query.Project != "" {
+		projects := strings.Split(q.Query.Project, ",")
 		for _, item := range projects {
 			if item != "" {
-				projectMap[item] = 1
+				Project[item] = 1
 			}
 		}
-		return projectMap
+		q.Project = Project
 	}
-	return nil
 }
 
 // BuildUProject dfined build select fields
-func (q *Query) BuildUProject() map[string]interface{} {
-	projectMap := map[string]interface{}{}
-	if q.UProject != "" {
-		projects := strings.Split(q.UProject, ",")
+func (q *Query) BuildUProject() {
+	UProject := map[string]interface{}{}
+	if q.Query.UProject != "" {
+		projects := strings.Split(q.Query.UProject, ",")
 		for _, item := range projects {
 			if item != "" {
-				projectMap[item] = 0
+				UProject[item] = 0
 			}
 		}
-		return projectMap
+		q.UProject = UProject
 	}
-	return nil
 }

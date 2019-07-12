@@ -78,7 +78,7 @@ func preloadInfo(target interface{}, preload string) *PreloadInfo {
 			if len(upStr) > 0 {
 				upArr := strings.Split(upStr[0], ",")
 				upArr = funk.Map(upArr, func(x string) string {
-					return fmt.Sprintf("%s.%s", preload, x)
+					return fmt.Sprintf("%s.%s", info.BsonName, x)
 				}).([]string)
 				info.Up = strings.Join(upArr, ",")
 			}
