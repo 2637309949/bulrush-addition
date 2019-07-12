@@ -111,6 +111,12 @@ func (i18n *I18N) Plugin(event events.EventEmmiter, httpProxy *gin.Engine, route
 		}
 		c.Next()
 	})
+	router.Use(func(c *gin.Context) {
+		if i18n.ctxLocale(c) != "" {
+			i18n.locale = i18n.ctxLocale(c)
+		}
+		c.Next()
+	})
 	router.GET(i18n.Prefix, func(c *gin.Context) {
 		c.JSON(http.StatusOK, i18n.locales)
 	})
