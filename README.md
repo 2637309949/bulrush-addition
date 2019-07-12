@@ -4,11 +4,17 @@
 
 - [Directory](#directory)
 - [bulrush-addition](#bulrush-addition)
-    - [mgo](#mgo)
-    - [gorm](#gorm)
-    - [logger](#logger)
-    - [redis](#redis)
-    - [apidoc](#apidoc)
+    - [Mgo](#mgo)
+        - [Create mgoext](#create-mgoext)
+        - [Use as a bulrush plugin](#use-as-a-bulrush-plugin)
+        - [Defined model and custom your own config](#defined-model-and-custom-your-own-config)
+    - [Gorm](#gorm)
+        - [Create gormext](#create-gormext)
+        - [Use as a bulrush plugin](#use-as-a-bulrush-plugin-1)
+        - [Defined model and custom your own config](#defined-model-and-custom-your-own-config-1)
+    - [Logger](#logger)
+    - [Redis](#redis)
+    - [Apidoc](#apidoc)
         - [Install apidoc](#install-apidoc)
         - [Add ignore to .igonre file](#add-ignore-to-igonre-file)
         - [Generate apidoc](#generate-apidoc)
@@ -20,19 +26,19 @@
 ## bulrush-addition
 	Provides the ability to expose default interfaces based on database-driven wrappers
 
-### mgo
+### Mgo
 
-**create mgoext**
+#### Create mgoext
 ```go
 var MGOExt = mgoext.New(conf.Cfg)
 ```
 
-**use as a bulrush plugin**
+#### Use as a bulrush plugin
 ```go
 app.PostUse(addition.MGOExt)
 ```
 
-**defined model and custom your own config**
+#### Defined model and custom your own config
 ```go
 type User struct {
 	Base     `bson:",inline"`
@@ -66,9 +72,9 @@ func RegisterUser(r *gin.RouterGroup) {
 }
 ```
 
-### gorm
+### Gorm
 
-**create gormext**
+#### Create gormext
 ```go
 var GORMExt = gormext.New(gormConf)
 var _ = GORMExt.Init(func(ext *gormext.GORM) {
@@ -83,7 +89,7 @@ var _ = GORMExt.Init(func(ext *gormext.GORM) {
 	}
 })
 ```
-**use as a bulrush plugin**
+#### Use as a bulrush plugin
 ```go
 app.PostUse(addition.GORMExt)
 ```
@@ -101,8 +107,10 @@ var _ = addition.GORMExt.Register(&gormext.Profile{
 	Reflector: &User{},
 	BanHook:   true,
 })
+```
 
-**defined model and custom your own config**
+#### Defined model and custom your own config
+```go
 // RegisterUser inject function
 func RegisterUser(r *gin.RouterGroup) {
 	addition.GORMExt.API.List(r, "user").Pre(func(c *gin.Context) {
@@ -119,7 +127,7 @@ func RegisterUser(r *gin.RouterGroup) {
 	addition.GORMExt.API.Delete(r, "user")
 }
 ```
-### logger
+### Logger
 ```
 // Logger application logger
 var Logger = addition.RushLogger.AppendTransports([]*logger.Transport{
@@ -141,7 +149,7 @@ var Logger = addition.RushLogger.AppendTransports([]*logger.Transport{
 Logger.Info("after")
 ```
 
-### redis
+### Redis
 ```go
 redis := redis.New(conf.Cfg)
 rules := []limit.Rule{
@@ -167,7 +175,7 @@ app.Use(&limit.Limit{
 })
 ```
 
-### apidoc
+### Apidoc
 
 #### Install apidoc
 ```shell
