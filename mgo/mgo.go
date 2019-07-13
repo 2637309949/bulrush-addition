@@ -58,33 +58,33 @@ type (
 )
 
 // Docs defined Docs for bulrush
-func (mgo *Mongo) Docs() *[]Doc {
+func (ext *Mongo) Docs() *[]Doc {
 	docs := []Doc{}
-	funk.ForEach(mgo.m, func(item *Profile) {
+	funk.ForEach(ext.m, func(item *Profile) {
 		docs = append(docs, *item.docs...)
 	})
 	return &docs
 }
 
 // Plugin defined plugin for bulrush
-func (mgo *Mongo) Plugin(r *gin.RouterGroup) *Mongo {
-	funk.ForEach(mgo.m, func(item *Profile) {
+func (ext *Mongo) Plugin(r *gin.RouterGroup) *Mongo {
+	funk.ForEach(ext.m, func(item *Profile) {
 		if !item.BanHook {
-			mgo.API.ALL(r, item.Name)
+			ext.API.ALL(r, item.Name)
 		}
 	})
-	return mgo
+	return ext
 }
 
 // Init mgo
-func (mgo *Mongo) Init(init func(*Mongo)) *Mongo {
-	init(mgo)
-	return mgo
+func (ext *Mongo) Init(init func(*Mongo)) *Mongo {
+	init(ext)
+	return ext
 }
 
 // Register model
 // should provide name and reflector paramters
-func (mgo *Mongo) Register(profile *Profile) *Mongo {
+func (ext *Mongo) Register(profile *Profile) *Mongo {
 	if profile.Name == "" {
 		panic(errors.New("name params must be provided"))
 	}
@@ -92,13 +92,13 @@ func (mgo *Mongo) Register(profile *Profile) *Mongo {
 		panic(errors.New("reflector params must be provided"))
 	}
 	profile.docs = &[]Doc{}
-	mgo.m = append(mgo.m, profile)
-	return mgo
+	ext.m = append(ext.m, profile)
+	return ext
 }
 
 // Profile model profile
-func (mgo *Mongo) Profile(name string) *Profile {
-	if m := funk.Find(mgo.m, func(item *Profile) bool {
+func (ext *Mongo) Profile(name string) *Profile {
+	if m := funk.Find(ext.m, func(item *Profile) bool {
 		return item.Name == name
 	}); m != nil {
 		return m.(*Profile)
@@ -107,8 +107,8 @@ func (mgo *Mongo) Profile(name string) *Profile {
 }
 
 // Vars return array of Var
-func (mgo *Mongo) Vars(name string) interface{} {
-	m := mgo.Profile(name)
+func (ext *Mongo) Vars(name string) interface{} {
+	m := ext.Profile(name)
 	if m != nil {
 		return addition.CreateSlice(m.Reflector)
 	}
@@ -117,8 +117,8 @@ func (mgo *Mongo) Vars(name string) interface{} {
 
 // Var return  Var
 // reflect from reflector entity
-func (mgo *Mongo) Var(name string) interface{} {
-	m := mgo.Profile(name)
+func (ext *Mongo) Var(name string) interface{} {
+	m := ext.Profile(name)
 	if m != nil {
 		return addition.CreateObject(m.Reflector)
 	}
@@ -127,12 +127,12 @@ func (mgo *Mongo) Var(name string) interface{} {
 
 // Model return instance
 // throw error if not exists these model
-func (mgo *Mongo) Model(name string) *mgo.Collection {
-	m := mgo.Profile(name)
+func (ext *Mongo) Model(name string) *mgo.Collection {
+	m := ext.Profile(name)
 	if m != nil {
-		db := addition.Some(m.DB, mgo.cfg.Database).(string)
+		db := addition.Some(m.DB, ext.cfg.Database).(string)
 		collect := addition.Some(m.Collection, name).(string)
-		return mgo.Session.DB(db).C(collect)
+		return ext.Session.DB(db).C(collect)
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
@@ -162,24 +162,23 @@ func dialInfo(conf *Config) *mgo.DialInfo {
 	return dial
 }
 
-// obtain mongo connect session
-func openSession(cfg *Config) *mgo.Session {
-	dial := dialInfo(cfg)
+// Conf defined conf
+func (ext *Mongo) Conf(conf *Config) *Mongo {
+	dial := dialInfo(conf)
 	session, err := mgo.DialWithInfo(dial)
 	if err != nil {
 		panic(err)
 	}
-	return session
+	ext.cfg = conf
+	ext.Session = session
+	return ext
 }
 
 // New New mongo instance
 // Export Session, API and AutoHook
-func New(conf *Config) *Mongo {
-	session := openSession(conf)
+func New() *Mongo {
 	mgo := &Mongo{}
 	mgo.m = make([]*Profile, 0)
-	mgo.cfg = conf
-	mgo.Session = session
 	mgo.API = &API{mgo: mgo, Opts: &Opts{}}
 	return mgo
 }

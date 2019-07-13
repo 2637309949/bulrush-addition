@@ -18,7 +18,6 @@ type (
 	// GORM Type Defined
 	GORM struct {
 		m   []*Profile
-		cfg *Config
 		DB  *gorm.DB
 		API *API
 	}
@@ -39,33 +38,33 @@ type (
 )
 
 // Docs defined Docs for bulrush
-func (gorm *GORM) Docs() *[]Doc {
+func (ext *GORM) Docs() *[]Doc {
 	docs := []Doc{}
-	funk.ForEach(gorm.m, func(item *Profile) {
+	funk.ForEach(ext.m, func(item *Profile) {
 		docs = append(docs, *item.docs...)
 	})
 	return &docs
 }
 
 // Plugin defined plugin for bulrush
-func (gorm *GORM) Plugin(r *gin.RouterGroup) *GORM {
-	funk.ForEach(gorm.m, func(item *Profile) {
+func (ext *GORM) Plugin(r *gin.RouterGroup) *GORM {
+	funk.ForEach(ext.m, func(item *Profile) {
 		if !item.BanHook {
-			gorm.API.ALL(r, item.Name)
+			ext.API.ALL(r, item.Name)
 		}
 	})
-	return gorm
+	return ext
 }
 
-// Init gorm
-func (gorm *GORM) Init(init func(*GORM)) *GORM {
-	init(gorm)
-	return gorm
+// Init ext
+func (ext *GORM) Init(init func(*GORM)) *GORM {
+	init(ext)
+	return ext
 }
 
 // Register model
 // should provide name and reflector paramters
-func (gorm *GORM) Register(profile *Profile) *GORM {
+func (ext *GORM) Register(profile *Profile) *GORM {
 	if profile.Name == "" {
 		panic(errors.New("name params must be provided"))
 	}
@@ -73,13 +72,13 @@ func (gorm *GORM) Register(profile *Profile) *GORM {
 		panic(errors.New("reflector params must be provided"))
 	}
 	profile.docs = &[]Doc{}
-	gorm.m = append(gorm.m, profile)
-	return gorm
+	ext.m = append(ext.m, profile)
+	return ext
 }
 
 // Profile model profile
-func (gorm *GORM) Profile(name string) *Profile {
-	if m := funk.Find(gorm.m, func(profile *Profile) bool {
+func (ext *GORM) Profile(name string) *Profile {
+	if m := funk.Find(ext.m, func(profile *Profile) bool {
 		return profile.Name == name
 	}); m != nil {
 		return m.(*Profile)
@@ -88,8 +87,8 @@ func (gorm *GORM) Profile(name string) *Profile {
 }
 
 // Vars return array of Var
-func (gorm *GORM) Vars(name string) interface{} {
-	m := gorm.Profile(name)
+func (ext *GORM) Vars(name string) interface{} {
+	m := ext.Profile(name)
 	if m != nil {
 		return addition.CreateSlice(m.Reflector)
 	}
@@ -98,31 +97,29 @@ func (gorm *GORM) Vars(name string) interface{} {
 
 // Var return  Var
 // reflect from reflector entity
-func (gorm *GORM) Var(name string) interface{} {
-	m := gorm.Profile(name)
+func (ext *GORM) Var(name string) interface{} {
+	m := ext.Profile(name)
 	if m != nil {
 		return addition.CreateObject(m.Reflector)
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
 
-// openDB get gorm connect session
-func openSession(cfg *Config) *gorm.DB {
-	db, err := gorm.Open(cfg.DBType, cfg.URL)
+// Conf set ext conf
+func (ext *GORM) Conf(conf *Config) *GORM {
+	db, err := gorm.Open(conf.DBType, conf.URL)
 	if err != nil {
 		panic(err)
 	}
-	return db
+	ext.DB = db
+	return ext
 }
 
 // New New mongo instance
 // Export Session, API and AutoHook
-func New(conf *Config) *GORM {
-	db := openSession(conf)
-	gorm := &GORM{}
-	gorm.m = make([]*Profile, 0)
-	gorm.cfg = conf
-	gorm.DB = db
-	gorm.API = &API{gorm: gorm, Opts: &Opts{}}
-	return gorm
+func New() *GORM {
+	ext := &GORM{}
+	ext.m = make([]*Profile, 0)
+	ext.API = &API{gorm: ext, Opts: &Opts{}}
+	return ext
 }
