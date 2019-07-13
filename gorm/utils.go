@@ -7,14 +7,7 @@ package gormext
 import (
 	"reflect"
 	"regexp"
-
-	"github.com/gin-gonic/gin"
 )
-
-func combineHF(handler gin.HandlerFunc, handlers []gin.HandlerFunc) []gin.HandlerFunc {
-	h := append(handlers, handler)
-	return h
-}
 
 func findStringSubmatch(matcher string, s string) []string {
 	var rgx = regexp.MustCompile(matcher)

@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/thoas/go-funk"
 )
 
@@ -21,11 +20,6 @@ func findStringSubmatch(matcher string, s string) []string {
 		return rs[1:]
 	}
 	return []string{}
-}
-
-func combineHF(handler gin.HandlerFunc, handlers []gin.HandlerFunc) []gin.HandlerFunc {
-	h := append(handlers, handler)
-	return h
 }
 
 func fieldTag(target interface{}, field string, tagname string) string {

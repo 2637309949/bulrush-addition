@@ -7,6 +7,7 @@ package mgoext
 import (
 	"fmt"
 
+	utils "github.com/2637309949/bulrush-utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -678,7 +679,7 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 	h.Pre(routeHooks.List.Pre)
 	h.Post(routeHooks.List.Post)
 	h.Auth(routeHooks.List.Auth)
-	r.GET(routePrefixs.One(name), combineHF(func(c *gin.Context) {
+	r.GET(routePrefixs.One(name), utils.Append(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
 			one(name, c, ai.mgo, opts)
 		}
@@ -687,8 +688,8 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 		h1.Post(h.post)
 		h1.Auth(h.auth)
 		h1.R(c)
-	}, handlers)...)
-	r.GET(routePrefixs.List(name), combineHF(func(c *gin.Context) {
+	}, handlers).([]gin.HandlerFunc)...)
+	r.GET(routePrefixs.List(name), utils.Append(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
 			list(name, c, ai.mgo, opts)
 		}
@@ -697,8 +698,8 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 		h1.Post(h.post)
 		h1.Auth(h.auth)
 		h1.R(c)
-	}, handlers)...)
-	r.POST(routePrefixs.Create(name), combineHF(func(c *gin.Context) {
+	}, handlers).([]gin.HandlerFunc)...)
+	r.POST(routePrefixs.Create(name), utils.Append(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
 			create(name, c, ai.mgo, opts)
 		}
@@ -707,8 +708,8 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 		h1.Post(h.post)
 		h1.Auth(h.auth)
 		h1.R(c)
-	}, handlers)...)
-	r.PUT(routePrefixs.Update(name), combineHF(func(c *gin.Context) {
+	}, handlers).([]gin.HandlerFunc)...)
+	r.PUT(routePrefixs.Update(name), utils.Append(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
 			update(name, c, ai.mgo, opts)
 		}
@@ -717,8 +718,8 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 		h1.Post(h.post)
 		h1.Auth(h.auth)
 		h1.R(c)
-	}, handlers)...)
-	r.DELETE(routePrefixs.Delete(name), combineHF(func(c *gin.Context) {
+	}, handlers).([]gin.HandlerFunc)...)
+	r.DELETE(routePrefixs.Delete(name), utils.Append(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
 			remove(name, c, ai.mgo, opts)
 		}
@@ -727,7 +728,7 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 		h1.Post(h.post)
 		h1.Auth(h.auth)
 		h1.R(c)
-	}, handlers)...)
+	}, handlers).([]gin.HandlerFunc)...)
 	*profile.docs = append(*profile.docs, *GenDoc(profile, routePrefixs, "one", "list", "create", "update", "delete")...)
 	return h
 }
