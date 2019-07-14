@@ -24,19 +24,21 @@ type (
 		Version    string    `json:"version" yaml:"version"`
 		GroupTitle string    `json:"groupTitle" yaml:"groupTitle"`
 		Parameter  Parameter `json:"parameter" yaml:"parameter"`
-		Success    Success   `json:"success" yaml:"success"`
 	}
 	// Parameter defined model api doc
 	Parameter struct {
-		Fields Fields `json:"fields" yaml:"fields"`
+		Fields   Fields    `json:"fields" yaml:"fields"`
+		Examples []Example `json:"examples" yaml:"examples"`
 	}
 	// Fields defined model api doc
 	Fields struct {
 		FieldsParameter []FieldsParameter `json:"Parameter" yaml:"Parameter"`
 	}
-	// FieldsSuccess defined model api doc
-	FieldsSuccess struct {
-		FieldsSuccess []FieldsParameter `json:"Success 200" yaml:"Success 200"`
+	// Example defined model api doc
+	Example struct {
+		Title   string `json:"title" yaml:"title"`
+		Content string `json:"content" yaml:"content"`
+		Type    string `json:"type" yaml:"type"`
 	}
 	// FieldsParameter defined model api doc
 	FieldsParameter struct {
@@ -46,10 +48,6 @@ type (
 		Optional bool              `json:"optional" yaml:"optional"`
 		Field    string            `json:"field" yaml:"field"`
 		Desc     string            `json:"description" yaml:"description"`
-	}
-	// Success defined model api doc
-	Success struct {
-		FieldsSuccess FieldsSuccess `json:"fields" yaml:"fields"`
 	}
 )
 
@@ -104,11 +102,6 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 	docs := []Doc{}
 	funk.ForEach(apis, func(api string) {
 		if api == "one" {
-			fieldsSuccess := append([]FieldsParameter{FieldsParameter{Group: "Success 200", Type: "Object", Field: "", Desc: "one of " + profile.Name}}, funk.Map(fieldsParameter, func(p FieldsParameter) FieldsParameter {
-				p.Group = "Success 200"
-				p.Field = "." + p.Field
-				return p
-			}).([]FieldsParameter)...)
 			docs = append(docs, Doc{
 				Type:       "get",
 				URL:        routePrefixs.One(profile.Name),
@@ -121,19 +114,16 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 					Fields: Fields{
 						FieldsParameter: fieldsParameter,
 					},
-				},
-				Success: Success{
-					FieldsSuccess: FieldsSuccess{
-						FieldsSuccess: fieldsSuccess,
+					Examples: []Example{
+						Example{
+							Title:   "Request-Example:",
+							Content: "{\n  \"cond\": { \"xx\": { $gte: 1 } },\n  \"range\": \"page\",\n  \"page\": 1,\n  \"size\": 10,\n  \"project\": \"xx1,xx2\",\n  \"preload\": \"xx3\",\n  \"order\": \"-xx4\",\n}",
+							Type:    "json",
+						},
 					},
 				},
 			})
 		} else if api == "list" {
-			fieldsSuccess := append([]FieldsParameter{FieldsParameter{Group: "Success 200", Type: "Object[]", Field: "", Desc: "list of " + profile.Name}}, funk.Map(fieldsParameter, func(p FieldsParameter) FieldsParameter {
-				p.Group = "Success 200"
-				p.Field = "." + p.Field
-				return p
-			}).([]FieldsParameter)...)
 			docs = append(docs, Doc{
 				Type:       "get",
 				URL:        routePrefixs.List(profile.Name),
@@ -146,10 +136,12 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 					Fields: Fields{
 						FieldsParameter: fieldsParameter,
 					},
-				},
-				Success: Success{
-					FieldsSuccess: FieldsSuccess{
-						FieldsSuccess: fieldsSuccess,
+					Examples: []Example{
+						Example{
+							Title:   "Request-Example:",
+							Content: "{\n  \"cond\": { \"xx\": { $gte: 1 } },\n  \"range\": \"page\",\n  \"page\": 1,\n  \"size\": 10,\n  \"project\": \"xx1,xx2\",\n  \"preload\": \"xx3\",\n  \"order\": \"-xx4\",\n}",
+							Type:    "json",
+						},
 					},
 				},
 			})
@@ -162,14 +154,16 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 				Group:      "NoSql",
 				GroupTitle: "NoSql Default",
 				Version:    "0.0.0",
-				Success: Success{
-					FieldsSuccess: FieldsSuccess{
-						FieldsSuccess: []FieldsParameter{},
-					},
-				},
 				Parameter: Parameter{
 					Fields: Fields{
 						FieldsParameter: fieldsParameter,
+					},
+					Examples: []Example{
+						Example{
+							Title:   "Request-Example:",
+							Content: "{\n  \"docs\": [{ \"xx\": \"\" }],\n  \"category\": \"instruction for use\",\n}",
+							Type:    "json",
+						},
 					},
 				},
 			})
@@ -182,14 +176,16 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 				Group:      "NoSql",
 				GroupTitle: "NoSql Default",
 				Version:    "0.0.0",
-				Success: Success{
-					FieldsSuccess: FieldsSuccess{
-						FieldsSuccess: []FieldsParameter{},
-					},
-				},
 				Parameter: Parameter{
 					Fields: Fields{
 						FieldsParameter: fieldsParameter,
+					},
+					Examples: []Example{
+						Example{
+							Title:   "Request-Example:",
+							Content: "{\n  \"docs\": [{ \"xx\": \"\" }],\n  \"category\": \"instruction for use\",\n}",
+							Type:    "json",
+						},
 					},
 				},
 			})
@@ -202,14 +198,16 @@ func GenDoc(profile *Profile, routePrefixs *RoutePrefixs, apis ...string) *[]Doc
 				Group:      "NoSql",
 				GroupTitle: "NoSql Default",
 				Version:    "0.0.0",
-				Success: Success{
-					FieldsSuccess: FieldsSuccess{
-						FieldsSuccess: []FieldsParameter{},
-					},
-				},
 				Parameter: Parameter{
 					Fields: Fields{
 						FieldsParameter: fieldsParameter,
+					},
+					Examples: []Example{
+						Example{
+							Title:   "Request-Example:",
+							Content: "{\n  \"docs\": [{ \"xx\": \"\" }],\n  \"category\": \"instruction for use\",\n}",
+							Type:    "json",
+						},
 					},
 				},
 			})
