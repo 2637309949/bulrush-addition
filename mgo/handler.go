@@ -40,7 +40,16 @@ func one(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}, "ID": map[string]interface{}{"$oid": id}}, struct{ name string }{name: name})
+
+	cond := map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}, "ID": map[string]interface{}{"$oid": id}}
+	if opts.RouteHooks.List.AuthOwn {
+		iden := opts.AuthIden(c)
+		if iden != nil {
+			cond[opts.RouteHooks.One.OwnKey] = map[string]interface{}{"$oid": iden.ID}
+		}
+	}
+	q.Cond = opts.RouteHooks.One.Cond(cond, struct{ name string }{name: name})
+
 	if err := q.Build(q.Cond); err != nil {
 		addition.RushLogger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -66,7 +75,15 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		return
 	}
 
-	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}}, struct{ name string }{name: name})
+	cond := map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}}
+	if opts.RouteHooks.List.AuthOwn {
+		iden := opts.AuthIden(c)
+		if iden != nil {
+			cond[opts.RouteHooks.List.OwnKey] = map[string]interface{}{"$oid": iden.ID}
+		}
+	}
+	q.Cond = opts.RouteHooks.List.Cond(cond, struct{ name string }{name: name})
+
 	if err := q.Build(q.Cond); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return

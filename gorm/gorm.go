@@ -17,9 +17,10 @@ import (
 type (
 	// GORM Type Defined
 	GORM struct {
-		m   []*Profile
-		DB  *gorm.DB
-		API *API
+		m    []*Profile
+		conf *Config
+		DB   *gorm.DB
+		API  *API
 	}
 	// Config defined GORM Config
 	Config struct {
@@ -111,6 +112,7 @@ func (ext *GORM) Conf(conf *Config) *GORM {
 	if err != nil {
 		panic(err)
 	}
+	ext.conf = conf
 	ext.DB = db
 	return ext
 }

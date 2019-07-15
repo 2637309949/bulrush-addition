@@ -29,18 +29,26 @@ func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	one := ext.Var(name)
 	key := findStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
 	id, err := strconv.Atoi(c.Param(key))
+	q := NewQuery()
 	if err != nil {
 		addition.RushLogger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-
-	q := NewQuery()
 	if err := c.BindQuery(&q.Query); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}, "id": id}, struct{ name string }{name: name})
+
+	cond := map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}, "id": id}
+	if opts.RouteHooks.One.AuthOwn {
+		iden := opts.AuthIden(c)
+		if iden != nil {
+			cond[opts.RouteHooks.One.OwnKey] = iden.ID
+		}
+	}
+	q.Cond = opts.RouteHooks.One.Cond(cond, struct{ name string }{name: name})
+
 	if err := q.Build(q.Cond); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -79,12 +87,21 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}}, struct{ name string }{name: name})
-	err := q.Build(q.Cond)
-	if err != nil {
+
+	cond := map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}}
+	if opts.RouteHooks.List.AuthOwn {
+		iden := opts.AuthIden(c)
+		if iden != nil {
+			cond[opts.RouteHooks.List.OwnKey] = iden.ID
+		}
+	}
+	q.Cond = opts.RouteHooks.List.Cond(cond, struct{ name string }{name: name})
+
+	if err := q.Build(q.Cond); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
+
 	db = db.Scopes(func(db *gorm.DB) *gorm.DB {
 		if q.Range != "ALL" {
 			db = db.Offset((q.Page - 1) * q.Size).Limit(q.Size)

@@ -10,19 +10,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type (
-	// HandlerAuthFunc defined auth type
-	HandlerAuthFunc func(c *gin.Context) bool
-	// Hook for API
-	Hook struct {
-		auth    HandlerAuthFunc
-		handler gin.HandlerFunc
-		mgo     *Mongo
-		pre     gin.HandlerFunc
-		post    gin.HandlerFunc
-		R       gin.HandlerFunc
-	}
-)
+// Hook for API
+type Hook struct {
+	auth      func(c *gin.Context) bool
+	AuthByOwn func(string) *Hook
+	handler   func(c *gin.Context)
+	mgo       *Mongo
+	pre       func(c *gin.Context)
+	post      func(c *gin.Context)
+	R         func(c *gin.Context)
+}
 
 // FailureHandler handlerss
 var FailureHandler = func(c *gin.Context) {
