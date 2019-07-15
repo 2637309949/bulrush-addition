@@ -49,14 +49,14 @@ type (
 		Pre  func(*gin.Context)
 		Post func(*gin.Context)
 		Auth func(c *gin.Context) bool
-		Cond func(map[string]interface{}, struct{ name string }) map[string]interface{}
+		Cond func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{}
 	}
 	// ListHook defined list hook opts
 	ListHook struct {
 		Pre  func(*gin.Context)
 		Post func(*gin.Context)
 		Auth func(*gin.Context) bool
-		Cond func(map[string]interface{}, struct{ name string }) map[string]interface{}
+		Cond func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{}
 	}
 	// CreateHook defined create hook opts
 	CreateHook struct {
@@ -71,6 +71,7 @@ type (
 		Post func(*gin.Context)
 		Auth func(*gin.Context) bool
 		Form func(form) form
+		Cond func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{}
 	}
 	// DeleteHook defined delete hook opts
 	DeleteHook struct {
@@ -78,6 +79,7 @@ type (
 		Post func(*gin.Context)
 		Auth func(*gin.Context) bool
 		Form func(form) form
+		Cond func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{}
 	}
 )
 
@@ -106,9 +108,9 @@ func (one *OneHook) auth() func(c *gin.Context) bool {
 	return one.Auth
 }
 
-func (one *OneHook) cond() func(map[string]interface{}, struct{ name string }) map[string]interface{} {
+func (one *OneHook) cond() func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{} {
 	if one.Cond == nil {
-		return func(cond map[string]interface{}, info struct{ name string }) map[string]interface{} {
+		return func(cond map[string]interface{}, c *gin.Context, info struct{ name string }) map[string]interface{} {
 			return cond
 		}
 	}
@@ -140,9 +142,9 @@ func (list *ListHook) auth() func(c *gin.Context) bool {
 	return list.Auth
 }
 
-func (list *ListHook) cond() func(map[string]interface{}, struct{ name string }) map[string]interface{} {
+func (list *ListHook) cond() func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{} {
 	if list.Cond == nil {
-		return func(cond map[string]interface{}, info struct{ name string }) map[string]interface{} {
+		return func(cond map[string]interface{}, c *gin.Context, info struct{ name string }) map[string]interface{} {
 			return cond
 		}
 	}
@@ -221,6 +223,15 @@ func (update *UpdateHook) form() func(form form) form {
 	return update.Form
 }
 
+func (update *UpdateHook) cond() func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{} {
+	if update.Cond == nil {
+		return func(cond map[string]interface{}, c *gin.Context, info struct{ name string }) map[string]interface{} {
+			return cond
+		}
+	}
+	return update.Cond
+}
+
 func (delete *DeleteHook) form() func(form) form {
 	if delete.Form == nil {
 		return func(form form) form {
@@ -231,6 +242,15 @@ func (delete *DeleteHook) form() func(form) form {
 		}
 	}
 	return delete.Form
+}
+
+func (delete *DeleteHook) cond() func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{} {
+	if delete.Cond == nil {
+		return func(cond map[string]interface{}, c *gin.Context, info struct{ name string }) map[string]interface{} {
+			return cond
+		}
+	}
+	return delete.Cond
 }
 
 func (delete *DeleteHook) pre() gin.HandlerFunc {
@@ -375,6 +395,7 @@ func (opts *Opts) withDefault() *Opts {
 	opts.RouteHooks.Update.Post = opts.RouteHooks.Update.post()
 	opts.RouteHooks.Update.Pre = opts.RouteHooks.Update.pre()
 	opts.RouteHooks.Update.Form = opts.RouteHooks.Update.form()
+	opts.RouteHooks.Update.Cond = opts.RouteHooks.Update.cond()
 
 	opts.RouteHooks.Create = opts.RouteHooks.create()
 	opts.RouteHooks.Create.Auth = opts.RouteHooks.Create.auth()
@@ -387,6 +408,7 @@ func (opts *Opts) withDefault() *Opts {
 	opts.RouteHooks.Delete.Post = opts.RouteHooks.Delete.post()
 	opts.RouteHooks.Delete.Pre = opts.RouteHooks.Delete.pre()
 	opts.RouteHooks.Delete.Form = opts.RouteHooks.Delete.form()
+	opts.RouteHooks.Delete.Cond = opts.RouteHooks.Delete.cond()
 	return opts
 }
 
@@ -468,6 +490,9 @@ func (opts *Opts) mergeOpts(upOpts *Opts) *Opts {
 			if upOpts.RouteHooks.Update.Form != nil {
 				newOpts.RouteHooks.Update.Form = upOpts.RouteHooks.Update.Form
 			}
+			if upOpts.RouteHooks.Update.Cond != nil {
+				newOpts.RouteHooks.Update.Cond = upOpts.RouteHooks.Update.Cond
+			}
 		}
 		if upOpts.RouteHooks.Create != nil {
 			if upOpts.RouteHooks.Create.Pre != nil {
@@ -495,6 +520,9 @@ func (opts *Opts) mergeOpts(upOpts *Opts) *Opts {
 			}
 			if upOpts.RouteHooks.Delete.Form != nil {
 				newOpts.RouteHooks.Delete.Form = upOpts.RouteHooks.Delete.Form
+			}
+			if upOpts.RouteHooks.Delete.Cond != nil {
+				newOpts.RouteHooks.Delete.Cond = upOpts.RouteHooks.Delete.Cond
 			}
 		}
 	}

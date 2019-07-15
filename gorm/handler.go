@@ -39,9 +39,7 @@ func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-
-	cond := map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}, "id": id}
-	q.Cond = opts.RouteHooks.One.Cond(cond, struct{ name string }{name: name})
+	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}, "id": id}, c, struct{ name string }{name: name})
 
 	if err := q.Build(q.Cond); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -81,9 +79,7 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-
-	cond := map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}}
-	q.Cond = opts.RouteHooks.List.Cond(cond, struct{ name string }{name: name})
+	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}}, c, struct{ name string }{name: name})
 
 	if err := q.Build(q.Cond); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -205,6 +201,7 @@ func create(name string, c *gin.Context, ext *GORM, opts *Opts) {
 func remove(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	var form form
 	bind := ext.Var(name)
+	q := NewQuery()
 	if err := c.ShouldBindJSON(&form); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -217,7 +214,12 @@ func remove(name string, c *gin.Context, ext *GORM, opts *Opts) {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "no id found!"})
 			return
 		}
-		if err := tx.Model(bind).Where("id=?", id).Update(map[string]interface{}{"deleted_at": time.Now()}).Error; err != nil {
+		q.Cond = opts.RouteHooks.Delete.Cond(map[string]interface{}{"ID": id}, c, struct{ name string }{name: name})
+		if err := q.Build(q.Cond); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		if err := tx.Model(bind).Where(q.SQL).Update(map[string]interface{}{"deleted_at": time.Now()}).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
@@ -235,6 +237,7 @@ func remove(name string, c *gin.Context, ext *GORM, opts *Opts) {
 
 func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	var form form
+	q := NewQuery()
 	if err := c.ShouldBindJSON(&form); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -248,8 +251,12 @@ func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "no id found!"})
 			return
 		}
-		// load data as default
-		if tx.Where("id=?", id).First(one).Error != nil {
+		q.Cond = opts.RouteHooks.Update.Cond(map[string]interface{}{"ID": id}, c, struct{ name string }{name: name})
+		if err := q.Build(q.Cond); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		if tx.Where(q.SQL).First(one).Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "id=" + id.(string) + " no found"})
 			return
 		}
