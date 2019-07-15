@@ -41,12 +41,6 @@ func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	}
 
 	cond := map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}, "id": id}
-	if opts.RouteHooks.One.AuthOwn {
-		iden := opts.AuthIden(c)
-		if iden != nil {
-			cond[opts.RouteHooks.One.OwnKey] = iden.ID
-		}
-	}
 	q.Cond = opts.RouteHooks.One.Cond(cond, struct{ name string }{name: name})
 
 	if err := q.Build(q.Cond); err != nil {
@@ -89,12 +83,6 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	}
 
 	cond := map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}}
-	if opts.RouteHooks.List.AuthOwn {
-		iden := opts.AuthIden(c)
-		if iden != nil {
-			cond[opts.RouteHooks.List.OwnKey] = iden.ID
-		}
-	}
 	q.Cond = opts.RouteHooks.List.Cond(cond, struct{ name string }{name: name})
 
 	if err := q.Build(q.Cond); err != nil {

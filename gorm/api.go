@@ -15,11 +15,6 @@ import (
 )
 
 type (
-	// Iden defined user info
-	Iden struct {
-		ID   interface{}
-		Name string
-	}
 	// API type defined
 	API struct {
 		gorm *GORM
@@ -29,7 +24,6 @@ type (
 	Opts struct {
 		Prefix        string
 		FeaturePrefix string
-		AuthIden      func(*gin.Context) *Iden
 		RoutePrefixs  *RoutePrefixs
 		RouteHooks    *RouteHooks
 	}
@@ -52,53 +46,38 @@ type (
 	}
 	// OneHook defined one hook opts
 	OneHook struct {
-		Pre       func(*gin.Context)
-		Post      func(*gin.Context)
-		Auth      func(c *gin.Context) bool
-		AuthOwn   bool
-		OwnKey    string
-		AuthByOwn func(*Hook) func(string) *Hook
-		Cond      func(map[string]interface{}, struct{ name string }) map[string]interface{}
+		Pre  func(*gin.Context)
+		Post func(*gin.Context)
+		Auth func(c *gin.Context) bool
+		Cond func(map[string]interface{}, struct{ name string }) map[string]interface{}
 	}
 	// ListHook defined list hook opts
 	ListHook struct {
-		Pre       func(*gin.Context)
-		Post      func(*gin.Context)
-		Auth      func(*gin.Context) bool
-		AuthOwn   bool
-		OwnKey    string
-		AuthByOwn func(*Hook) func(string) *Hook
-		Cond      func(map[string]interface{}, struct{ name string }) map[string]interface{}
+		Pre  func(*gin.Context)
+		Post func(*gin.Context)
+		Auth func(*gin.Context) bool
+		Cond func(map[string]interface{}, struct{ name string }) map[string]interface{}
 	}
 	// CreateHook defined create hook opts
 	CreateHook struct {
-		Pre       func(*gin.Context)
-		Post      func(*gin.Context)
-		Auth      func(*gin.Context) bool
-		AuthOwn   bool
-		OwnKey    string
-		AuthByOwn func(*Hook) func(string) *Hook
-		Form      func(form) form
+		Pre  func(*gin.Context)
+		Post func(*gin.Context)
+		Auth func(*gin.Context) bool
+		Form func(form) form
 	}
 	// UpdateHook defined create hook opts
 	UpdateHook struct {
-		Pre       func(*gin.Context)
-		Post      func(*gin.Context)
-		Auth      func(*gin.Context) bool
-		AuthOwn   bool
-		OwnKey    string
-		AuthByOwn func(*Hook) func(string) *Hook
-		Form      func(form) form
+		Pre  func(*gin.Context)
+		Post func(*gin.Context)
+		Auth func(*gin.Context) bool
+		Form func(form) form
 	}
 	// DeleteHook defined delete hook opts
 	DeleteHook struct {
-		Pre       func(*gin.Context)
-		Post      func(*gin.Context)
-		Auth      func(*gin.Context) bool
-		AuthOwn   bool
-		OwnKey    string
-		AuthByOwn func(*Hook) func(string) *Hook
-		Form      func(form) form
+		Pre  func(*gin.Context)
+		Post func(*gin.Context)
+		Auth func(*gin.Context) bool
+		Form func(form) form
 	}
 )
 
@@ -125,19 +104,6 @@ func (one *OneHook) auth() func(c *gin.Context) bool {
 		}
 	}
 	return one.Auth
-}
-
-func (one *OneHook) authByOwn() func(*Hook) func(string) *Hook {
-	if one.AuthByOwn == nil {
-		return func(h *Hook) func(string) *Hook {
-			return func(ret string) *Hook {
-				one.OwnKey = ret
-				one.AuthOwn = true
-				return h
-			}
-		}
-	}
-	return one.AuthByOwn
 }
 
 func (one *OneHook) cond() func(map[string]interface{}, struct{ name string }) map[string]interface{} {
@@ -174,19 +140,6 @@ func (list *ListHook) auth() func(c *gin.Context) bool {
 	return list.Auth
 }
 
-func (list *ListHook) authByOwn() func(*Hook) func(string) *Hook {
-	if list.AuthByOwn == nil {
-		return func(h *Hook) func(string) *Hook {
-			return func(ret string) *Hook {
-				list.OwnKey = ret
-				list.AuthOwn = true
-				return h
-			}
-		}
-	}
-	return list.AuthByOwn
-}
-
 func (list *ListHook) cond() func(map[string]interface{}, struct{ name string }) map[string]interface{} {
 	if list.Cond == nil {
 		return func(cond map[string]interface{}, info struct{ name string }) map[string]interface{} {
@@ -219,19 +172,6 @@ func (create *CreateHook) auth() func(c *gin.Context) bool {
 		}
 	}
 	return create.Auth
-}
-
-func (create *CreateHook) authByOwn() func(*Hook) func(string) *Hook {
-	if create.AuthByOwn == nil {
-		return func(h *Hook) func(string) *Hook {
-			return func(ret string) *Hook {
-				create.OwnKey = ret
-				create.AuthOwn = true
-				return h
-			}
-		}
-	}
-	return create.AuthByOwn
 }
 
 func (create *CreateHook) form() func(form form) form {
@@ -270,19 +210,6 @@ func (update *UpdateHook) auth() func(c *gin.Context) bool {
 		}
 	}
 	return update.Auth
-}
-
-func (update *UpdateHook) authByOwn() func(*Hook) func(string) *Hook {
-	if update.AuthByOwn == nil {
-		return func(h *Hook) func(string) *Hook {
-			return func(ret string) *Hook {
-				update.OwnKey = ret
-				update.AuthOwn = true
-				return h
-			}
-		}
-	}
-	return update.AuthByOwn
 }
 
 func (update *UpdateHook) form() func(form form) form {
@@ -329,19 +256,6 @@ func (delete *DeleteHook) auth() func(c *gin.Context) bool {
 		}
 	}
 	return delete.Auth
-}
-
-func (delete *DeleteHook) authByOwn() func(*Hook) func(string) *Hook {
-	if delete.AuthByOwn == nil {
-		return func(h *Hook) func(string) *Hook {
-			return func(ret string) *Hook {
-				delete.OwnKey = ret
-				delete.AuthOwn = true
-				return h
-			}
-		}
-	}
-	return delete.AuthByOwn
 }
 
 func (prefixs *RoutePrefixs) one() func(string) string {
@@ -431,18 +345,8 @@ func (opts *Opts) prefix() string {
 	return opts.Prefix
 }
 
-func (opts *Opts) authIden() func(*gin.Context) *Iden {
-	if opts.AuthIden == nil {
-		return func(*gin.Context) *Iden {
-			return nil
-		}
-	}
-	return opts.AuthIden
-}
-
 func (opts *Opts) withDefault() *Opts {
 	opts.Prefix = opts.prefix()
-	opts.AuthIden = opts.authIden()
 	opts.FeaturePrefix = opts.featurePrefix()
 
 	opts.RoutePrefixs = opts.routePrefixs()
@@ -456,35 +360,30 @@ func (opts *Opts) withDefault() *Opts {
 	opts.RouteHooks = opts.routeHooks()
 	opts.RouteHooks.One = opts.RouteHooks.one()
 	opts.RouteHooks.One.Auth = opts.RouteHooks.One.auth()
-	opts.RouteHooks.One.AuthByOwn = opts.RouteHooks.One.authByOwn()
 	opts.RouteHooks.One.Post = opts.RouteHooks.One.post()
 	opts.RouteHooks.One.Cond = opts.RouteHooks.One.cond()
 	opts.RouteHooks.One.Pre = opts.RouteHooks.One.pre()
 
 	opts.RouteHooks.List = opts.RouteHooks.list()
 	opts.RouteHooks.List.Auth = opts.RouteHooks.List.auth()
-	opts.RouteHooks.List.AuthByOwn = opts.RouteHooks.List.authByOwn()
 	opts.RouteHooks.List.Post = opts.RouteHooks.List.post()
 	opts.RouteHooks.List.Cond = opts.RouteHooks.List.cond()
 	opts.RouteHooks.List.Pre = opts.RouteHooks.List.pre()
 
 	opts.RouteHooks.Update = opts.RouteHooks.update()
 	opts.RouteHooks.Update.Auth = opts.RouteHooks.Update.auth()
-	opts.RouteHooks.Update.AuthByOwn = opts.RouteHooks.Update.authByOwn()
 	opts.RouteHooks.Update.Post = opts.RouteHooks.Update.post()
 	opts.RouteHooks.Update.Pre = opts.RouteHooks.Update.pre()
 	opts.RouteHooks.Update.Form = opts.RouteHooks.Update.form()
 
 	opts.RouteHooks.Create = opts.RouteHooks.create()
 	opts.RouteHooks.Create.Auth = opts.RouteHooks.Create.auth()
-	opts.RouteHooks.Create.AuthByOwn = opts.RouteHooks.Create.authByOwn()
 	opts.RouteHooks.Create.Post = opts.RouteHooks.Create.post()
 	opts.RouteHooks.Create.Pre = opts.RouteHooks.Create.pre()
 	opts.RouteHooks.Create.Form = opts.RouteHooks.Create.form()
 
 	opts.RouteHooks.Delete = opts.RouteHooks.delete()
 	opts.RouteHooks.Delete.Auth = opts.RouteHooks.Delete.auth()
-	opts.RouteHooks.Delete.AuthByOwn = opts.RouteHooks.Delete.authByOwn()
 	opts.RouteHooks.Delete.Post = opts.RouteHooks.Delete.post()
 	opts.RouteHooks.Delete.Pre = opts.RouteHooks.Delete.pre()
 	opts.RouteHooks.Delete.Form = opts.RouteHooks.Delete.form()
@@ -498,11 +397,6 @@ func (opts *Opts) mergeOpts(upOpts *Opts) *Opts {
 	newOpts.Prefix = opts.Prefix
 	if upOpts.Prefix != "" {
 		newOpts.Prefix = upOpts.Prefix
-	}
-
-	newOpts.AuthIden = opts.AuthIden
-	if upOpts.AuthIden != nil {
-		newOpts.AuthIden = upOpts.AuthIden
 	}
 
 	newOpts.FeaturePrefix = opts.FeaturePrefix
@@ -546,9 +440,6 @@ func (opts *Opts) mergeOpts(upOpts *Opts) *Opts {
 			if upOpts.RouteHooks.One.Auth != nil {
 				newOpts.RouteHooks.One.Auth = upOpts.RouteHooks.One.Auth
 			}
-			if upOpts.RouteHooks.One.AuthByOwn != nil {
-				newOpts.RouteHooks.One.AuthByOwn = upOpts.RouteHooks.One.AuthByOwn
-			}
 		}
 		if upOpts.RouteHooks.List != nil {
 			if upOpts.RouteHooks.List.Pre != nil {
@@ -563,9 +454,6 @@ func (opts *Opts) mergeOpts(upOpts *Opts) *Opts {
 			if upOpts.RouteHooks.List.Auth != nil {
 				newOpts.RouteHooks.List.Auth = upOpts.RouteHooks.List.Auth
 			}
-			if upOpts.RouteHooks.List.AuthByOwn != nil {
-				newOpts.RouteHooks.List.AuthByOwn = upOpts.RouteHooks.List.AuthByOwn
-			}
 		}
 		if upOpts.RouteHooks.Update != nil {
 			if upOpts.RouteHooks.Update.Pre != nil {
@@ -576,9 +464,6 @@ func (opts *Opts) mergeOpts(upOpts *Opts) *Opts {
 			}
 			if upOpts.RouteHooks.Update.Auth != nil {
 				newOpts.RouteHooks.Update.Auth = upOpts.RouteHooks.Update.Auth
-			}
-			if upOpts.RouteHooks.Update.AuthByOwn != nil {
-				newOpts.RouteHooks.Update.AuthByOwn = upOpts.RouteHooks.Update.AuthByOwn
 			}
 			if upOpts.RouteHooks.Update.Form != nil {
 				newOpts.RouteHooks.Update.Form = upOpts.RouteHooks.Update.Form
@@ -594,9 +479,6 @@ func (opts *Opts) mergeOpts(upOpts *Opts) *Opts {
 			if upOpts.RouteHooks.Create.Auth != nil {
 				newOpts.RouteHooks.Create.Auth = upOpts.RouteHooks.Create.Auth
 			}
-			if upOpts.RouteHooks.Create.AuthByOwn != nil {
-				newOpts.RouteHooks.Create.AuthByOwn = upOpts.RouteHooks.Create.AuthByOwn
-			}
 			if upOpts.RouteHooks.Create.Form != nil {
 				newOpts.RouteHooks.Create.Form = upOpts.RouteHooks.Create.Form
 			}
@@ -610,9 +492,6 @@ func (opts *Opts) mergeOpts(upOpts *Opts) *Opts {
 			}
 			if upOpts.RouteHooks.Delete.Auth != nil {
 				newOpts.RouteHooks.Delete.Auth = upOpts.RouteHooks.Delete.Auth
-			}
-			if upOpts.RouteHooks.Delete.AuthByOwn != nil {
-				newOpts.RouteHooks.Delete.AuthByOwn = upOpts.RouteHooks.Delete.AuthByOwn
 			}
 			if upOpts.RouteHooks.Delete.Form != nil {
 				newOpts.RouteHooks.Delete.Form = upOpts.RouteHooks.Delete.Form
@@ -683,7 +562,6 @@ func (ai *API) One(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 	h.Pre(routeHooks.One.Pre)
 	h.Post(routeHooks.One.Post)
 	h.Auth(routeHooks.One.Auth)
-	h.AuthByOwn = routeHooks.One.AuthByOwn(h)
 	handlers = append(handlers, h.R)
 	r.GET(routePrefixs.One(name), handlers...)
 	*profile.docs = append(*profile.docs, *GenDoc(profile, routePrefixs, "one")...)
@@ -710,7 +588,6 @@ func (ai *API) List(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc
 	h.Pre(routeHooks.List.Pre)
 	h.Post(routeHooks.List.Post)
 	h.Auth(routeHooks.List.Auth)
-	h.AuthByOwn = routeHooks.List.AuthByOwn(h)
 	handlers = append(handlers, h.R)
 	r.GET(routePrefixs.List(name), handlers...)
 	*profile.docs = append(*profile.docs, *GenDoc(profile, routePrefixs, "list")...)
@@ -737,7 +614,6 @@ func (ai *API) Create(r *gin.RouterGroup, name string, handlers ...gin.HandlerFu
 	h.Pre(routeHooks.Create.Pre)
 	h.Post(routeHooks.Create.Post)
 	h.Auth(routeHooks.Create.Auth)
-	h.AuthByOwn = routeHooks.Create.AuthByOwn(h)
 	handlers = append(handlers, h.R)
 	r.POST(routePrefixs.Create(name), handlers...)
 	*profile.docs = append(*profile.docs, *GenDoc(profile, routePrefixs, "create")...)
@@ -764,7 +640,6 @@ func (ai *API) Update(r *gin.RouterGroup, name string, handlers ...gin.HandlerFu
 	h.Pre(routeHooks.Update.Pre)
 	h.Post(routeHooks.Update.Post)
 	h.Auth(routeHooks.Update.Auth)
-	h.AuthByOwn = routeHooks.Update.AuthByOwn(h)
 	handlers = append(handlers, h.R)
 	r.PUT(routePrefixs.Update(name), handlers...)
 	*profile.docs = append(*profile.docs, *GenDoc(profile, routePrefixs, "update")...)
@@ -791,7 +666,6 @@ func (ai *API) Delete(r *gin.RouterGroup, name string, handlers ...gin.HandlerFu
 	h.Pre(routeHooks.Delete.Pre)
 	h.Post(routeHooks.Delete.Post)
 	h.Auth(routeHooks.Delete.Auth)
-	h.AuthByOwn = routeHooks.Delete.AuthByOwn(h)
 	handlers = append(handlers, h.R)
 	r.DELETE(routePrefixs.Delete(name), handlers...)
 	*profile.docs = append(*profile.docs, *GenDoc(profile, routePrefixs, "update")...)
@@ -809,17 +683,8 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 		opts = opts.mergeOpts(profile.Opts)
 	}
 	routePrefixs := opts.RoutePrefixs
-	routeHooks := opts.RouteHooks
 
 	h := createHooks(ai.gorm, nil)
-	h.AuthByOwn = func(ret string) *Hook {
-		routeHooks.One.AuthByOwn(h)
-		routeHooks.List.AuthByOwn(h)
-		routeHooks.Create.AuthByOwn(h)
-		routeHooks.Update.AuthByOwn(h)
-		routeHooks.Delete.AuthByOwn(h)
-		return h
-	}
 	r.GET(routePrefixs.One(name), utils.Append(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
 			one(name, c, ai.gorm, opts)
