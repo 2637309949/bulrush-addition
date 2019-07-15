@@ -265,7 +265,7 @@ func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
-		// set change value
+
 		json.Unmarshal(jsonByte, one)
 		if err := tx.Model(one).Update(one).Error; err != nil {
 			tx.Rollback()
