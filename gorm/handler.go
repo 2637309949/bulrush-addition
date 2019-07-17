@@ -188,8 +188,7 @@ func create(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		}
 
 	}
-	err = tx.Commit().Error
-	if err != nil {
+	if err = tx.Commit().Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}

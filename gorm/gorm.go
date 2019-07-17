@@ -24,8 +24,9 @@ type (
 	}
 	// Config defined GORM Config
 	Config struct {
-		DBType string `json:"dbType" yaml:"dbType"`
-		URL    string `json:"url" yaml:"url"`
+		AutoMigrate bool   `json:"automigrate" yaml:"automigrate"`
+		DBType      string `json:"dbType" yaml:"dbType"`
+		URL         string `json:"url" yaml:"url"`
 	}
 	// Profile defined model profile
 	Profile struct {
@@ -74,6 +75,11 @@ func (ext *GORM) Register(profile *Profile) *GORM {
 	}
 	profile.docs = &[]Doc{}
 	ext.m = append(ext.m, profile)
+	if ext.conf.AutoMigrate {
+		if err := ext.DB.AutoMigrate(profile.Reflector).Error; err != nil {
+			addition.RushLogger.Error(fmt.Sprintf("Error in AutoMigrate:%v", err.Error()))
+		}
+	}
 	return ext
 }
 
