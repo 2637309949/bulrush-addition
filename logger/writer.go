@@ -18,7 +18,7 @@ type LevelWriter struct {
 func (c *LevelWriter) Write(p []byte) (int, error) {
 	level := toLevelString(c.Level)
 	colorLevel := toColorLevel(c.Level, level)
-	pbyte := []byte(fmt.Sprintf("%s %s \n", colorLevel, string(p)))
+	pbyte := []byte(fmt.Sprintf("%s %s", colorLevel, string(p)))
 	return c.W.Write(pbyte)
 }
 
@@ -37,7 +37,7 @@ func (t *MutiWriter) Write(p []byte) (n int, err error) {
 				return
 			}
 		} else {
-			pbyte := []byte(fmt.Sprintf("%s \n", string(p)))
+			pbyte := []byte(fmt.Sprintf("%s", string(p)))
 			n, err = w.Write(pbyte)
 			if err != nil {
 				return
