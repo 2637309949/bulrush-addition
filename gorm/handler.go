@@ -243,30 +243,20 @@ func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	}
 	form = opts.RouteHooks.Create.Form(form)
 	tx := ext.DB.Begin()
-	for _, item := range form.Docs {
+	for _, doc := range form.Docs {
 		one := ext.Var(name)
-		id, ok := item["ID"]
+		id, ok := doc["ID"]
 		if !ok {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "no id found!"})
 			return
 		}
+		tpColumnName(&doc)
 		q.Cond = opts.RouteHooks.Update.Cond(map[string]interface{}{"ID": id}, c, struct{ name string }{name: name})
 		if err := q.Build(q.Cond); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
-		if tx.Where(q.SQL).First(one).Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "id=" + id.(string) + " no found"})
-			return
-		}
-		jsonByte, err := json.Marshal(item)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-
-		json.Unmarshal(jsonByte, one)
-		if err := tx.Model(one).Update(one).Error; err != nil {
+		if err := tx.Model(one).Updates(doc).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
