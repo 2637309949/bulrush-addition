@@ -81,21 +81,21 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	if q.Range != "ALL" {
 		totalpages := math.Ceil(float64(totalrecords) / float64(q.Size))
 		c.JSON(http.StatusOK, gin.H{
-			"range":        q.Range,
-			"page":         q.Page,
+			"page":         q.Query.Page,
+			"size":         q.Query.Size,
 			"totalpages":   totalpages,
-			"size":         q.Size,
+			"range":        q.Query.Range,
 			"totalrecords": totalrecords,
 			"cond":         q.Cond,
-			"preload":      q.Preload,
+			"preload":      q.Query.Preload,
 			"list":         list,
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
-			"range":        q.Range,
+			"range":        q.Query.Range,
 			"totalrecords": totalrecords,
 			"cond":         q.Cond,
-			"preload":      q.Preload,
+			"preload":      q.Query.Preload,
 			"list":         list,
 		})
 	}
