@@ -40,33 +40,33 @@ type (
 )
 
 // Docs defined Docs for bulrush
-func (ext *GORM) Docs() *[]Doc {
+func (e *GORM) Docs() *[]Doc {
 	docs := []Doc{}
-	funk.ForEach(ext.m, func(item *Profile) {
+	funk.ForEach(e.m, func(item *Profile) {
 		docs = append(docs, *item.docs...)
 	})
 	return &docs
 }
 
 // Plugin defined plugin for bulrush
-func (ext *GORM) Plugin(r *gin.RouterGroup) *GORM {
-	funk.ForEach(ext.m, func(item *Profile) {
+func (e *GORM) Plugin(r *gin.RouterGroup) *GORM {
+	funk.ForEach(e.m, func(item *Profile) {
 		if !item.BanHook {
-			ext.API.ALL(r, item.Name)
+			e.API.ALL(r, item.Name)
 		}
 	})
-	return ext
+	return e
 }
 
-// Init ext
-func (ext *GORM) Init(init func(*GORM)) *GORM {
-	init(ext)
-	return ext
+// Init e
+func (e *GORM) Init(init func(*GORM)) *GORM {
+	init(e)
+	return e
 }
 
 // Register model
 // should provide name and reflector paramters
-func (ext *GORM) Register(profile *Profile) *GORM {
+func (e *GORM) Register(profile *Profile) *GORM {
 	if profile.Name == "" {
 		panic(errors.New("name params must be provided"))
 	}
@@ -74,18 +74,18 @@ func (ext *GORM) Register(profile *Profile) *GORM {
 		panic(errors.New("reflector params must be provided"))
 	}
 	profile.docs = &[]Doc{}
-	ext.m = append(ext.m, profile)
-	if ext.conf.AutoMigrate {
-		if err := ext.DB.AutoMigrate(profile.Reflector).Error; err != nil {
+	e.m = append(e.m, profile)
+	if e.conf.AutoMigrate {
+		if err := e.DB.AutoMigrate(profile.Reflector).Error; err != nil {
 			addition.RushLogger.Error(fmt.Sprintf("Error in AutoMigrate:%v", err.Error()))
 		}
 	}
-	return ext
+	return e
 }
 
 // Profile model profile
-func (ext *GORM) Profile(name string) *Profile {
-	if m := funk.Find(ext.m, func(profile *Profile) bool {
+func (e *GORM) Profile(name string) *Profile {
+	if m := funk.Find(e.m, func(profile *Profile) bool {
 		return profile.Name == name
 	}); m != nil {
 		return m.(*Profile)
@@ -94,8 +94,8 @@ func (ext *GORM) Profile(name string) *Profile {
 }
 
 // Vars return array of Var
-func (ext *GORM) Vars(name string) interface{} {
-	m := ext.Profile(name)
+func (e *GORM) Vars(name string) interface{} {
+	m := e.Profile(name)
 	if m != nil {
 		return addition.CreateSlice(m.Reflector)
 	}
@@ -104,30 +104,30 @@ func (ext *GORM) Vars(name string) interface{} {
 
 // Var return  Var
 // reflect from reflector entity
-func (ext *GORM) Var(name string) interface{} {
-	m := ext.Profile(name)
+func (e *GORM) Var(name string) interface{} {
+	m := e.Profile(name)
 	if m != nil {
 		return addition.CreateObject(m.Reflector)
 	}
 	panic(fmt.Errorf("manifest %s not found", name))
 }
 
-// Conf set ext conf
-func (ext *GORM) Conf(conf *Config) *GORM {
+// Conf set e conf
+func (e *GORM) Conf(conf *Config) *GORM {
 	db, err := gorm.Open(conf.DBType, conf.URL)
 	if err != nil {
 		panic(err)
 	}
-	ext.conf = conf
-	ext.DB = db
-	return ext
+	e.conf = conf
+	e.DB = db
+	return e
 }
 
 // New New mongo instance
 // Export Session, API and AutoHook
 func New() *GORM {
-	ext := &GORM{}
-	ext.m = make([]*Profile, 0)
-	ext.API = &API{gorm: ext, Opts: &Opts{}}
-	return ext
+	e := &GORM{}
+	e.m = make([]*Profile, 0)
+	e.API = &API{gorm: e, Opts: &Opts{}}
+	return e
 }

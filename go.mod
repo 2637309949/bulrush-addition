@@ -11,6 +11,7 @@ require (
 	github.com/go-playground/universal-translator v0.16.0 // indirect
 	github.com/go-redis/redis v6.15.2+incompatible
 	github.com/jinzhu/gorm v1.9.9
+	github.com/jinzhu/inflection v1.0.0
 	github.com/kataras/go-events v0.0.2
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/leodido/go-urn v1.1.0 // indirect
