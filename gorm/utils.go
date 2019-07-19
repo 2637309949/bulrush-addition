@@ -7,7 +7,6 @@ package gormext
 import (
 	"bytes"
 	"reflect"
-	"regexp"
 	"strings"
 
 	utils "github.com/2637309949/bulrush-utils"
@@ -16,15 +15,6 @@ import (
 var smap = utils.NewSafeMap()
 var commonInitialisms = []string{"API", "ASCII", "CPU", "CSS", "DNS", "EOF", "GUID", "HTML", "HTTP", "HTTPS", "ID", "IP", "JSON", "LHS", "QPS", "RAM", "RHS", "RPC", "SLA", "SMTP", "SSH", "TLS", "TTL", "UID", "UI", "UUID", "URI", "URL", "UTF8", "VM", "XML", "XSRF", "XSS"}
 var commonInitialismsReplacer = columnReplacer(commonInitialisms)
-
-func findStringSubmatch(matcher string, s string) []string {
-	var rgx = regexp.MustCompile(matcher)
-	rs := rgx.FindStringSubmatch(s)
-	if rs != nil {
-		return rs[1:]
-	}
-	return []string{}
-}
 
 func findFieldStruct(vType reflect.Type, name string) *reflect.StructField {
 	if vType.Kind() == reflect.Ptr {
@@ -113,7 +103,7 @@ func columnNamer(name string) string {
 	return s
 }
 
-func tpColumnName(m *map[string]interface{}) {
+func toColumnName(m *map[string]interface{}) {
 	for k, v := range *m {
 		c := columnNamer(k)
 		(*m)[c] = v

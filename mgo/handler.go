@@ -12,6 +12,7 @@ import (
 	"time"
 
 	addition "github.com/2637309949/bulrush-addition"
+	utils "github.com/2637309949/bulrush-utils"
 	"github.com/thoas/go-funk"
 
 	"github.com/gin-gonic/gin"
@@ -26,7 +27,7 @@ type form struct {
 func one(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	Model := mgo.Model(name)
 	one := mgo.Var(name)
-	key := findStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
+	key := utils.FindStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
 	id := c.Param(key)
 	if !bson.IsObjectIdHex(id) {
 		addition.RushLogger.Error("not a valid id")

@@ -7,20 +7,11 @@ package mgoext
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 	"strings"
 
+	utils "github.com/2637309949/bulrush-utils"
 	"github.com/thoas/go-funk"
 )
-
-func findStringSubmatch(matcher string, s string) []string {
-	var rgx = regexp.MustCompile(matcher)
-	rs := rgx.FindStringSubmatch(s)
-	if rs != nil {
-		return rs[1:]
-	}
-	return []string{}
-}
 
 func fieldTag(target interface{}, field string, tagname string) string {
 	elementType := reflect.TypeOf(target)
@@ -52,8 +43,8 @@ func preloadInfo(target interface{}, preload string) *PreloadInfo {
 		return nil
 	}
 	bsonName := strings.Split(field.Tag.Get("bson"), ",")[0]
-	refStr := findStringSubmatch(`ref\((.*?)\)`, field.Tag.Get("br"))
-	upStr := findStringSubmatch(`up\((.*?)\)`, field.Tag.Get("br"))
+	refStr := utils.FindStringSubmatch(`ref\((.*?)\)`, field.Tag.Get("br"))
+	upStr := utils.FindStringSubmatch(`up\((.*?)\)`, field.Tag.Get("br"))
 	if len(refStr) > 0 {
 		refInfo := strings.Split(refStr[0], ",")
 		if len(refInfo) >= 2 {

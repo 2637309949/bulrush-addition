@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/2637309949/bulrush v0.0.0-20190615094031-919971fe3950
-	github.com/2637309949/bulrush-utils v0.0.0-20190718111119-cd739a9320c1
+	github.com/2637309949/bulrush-utils v0.0.0-20190719014903-7f23f85d8694
 	github.com/gin-gonic/gin v1.4.0
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 	github.com/go-playground/locales v0.12.1 // indirect

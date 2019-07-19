@@ -13,6 +13,7 @@ import (
 	"time"
 
 	addition "github.com/2637309949/bulrush-addition"
+	utils "github.com/2637309949/bulrush-utils"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/thoas/go-funk"
@@ -27,7 +28,7 @@ type form struct {
 func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	db := ext.DB
 	one := ext.Var(name)
-	key := findStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
+	key := utils.FindStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
 	id, err := strconv.Atoi(c.Param(key))
 	q := NewQuery()
 	if err != nil {
@@ -250,7 +251,7 @@ func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "no id found!"})
 			return
 		}
-		tpColumnName(&doc)
+		toColumnName(&doc)
 		q.Cond = opts.RouteHooks.Update.Cond(map[string]interface{}{"ID": id}, c, struct{ name string }{name: name})
 		if err := q.Build(q.Cond); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
