@@ -34,10 +34,6 @@ func findFieldStruct(vType reflect.Type, name string) *reflect.StructField {
 	return nil
 }
 
-func createStruct(sfs []reflect.StructField) interface{} {
-	return reflect.New(reflect.StructOf(sfs)).Interface()
-}
-
 func columnReplacer(sms []string) *strings.Replacer {
 	var list []string
 	for _, initialism := range sms {
@@ -53,25 +49,20 @@ func columnNamer(name string) string {
 		lower = false
 		upper = true
 	)
-
 	if v := smap.Get(name); v != "" {
 		return v
 	}
-
 	if name == "" {
 		return ""
 	}
-
 	var (
 		value                                    = commonInitialismsReplacer.Replace(name)
 		buf                                      = bytes.NewBufferString("")
 		lastCase, currCase, nextCase, nextNumber bool
 	)
-
 	for i, v := range value[:len(value)-1] {
 		nextCase = bool(value[i+1] >= 'A' && value[i+1] <= 'Z')
 		nextNumber = bool(value[i+1] >= '0' && value[i+1] <= '9')
-
 		if i > 0 {
 			if currCase == upper {
 				if lastCase == upper && (nextCase == upper || nextNumber == upper) {
@@ -95,9 +86,7 @@ func columnNamer(name string) string {
 		lastCase = currCase
 		currCase = nextCase
 	}
-
 	buf.WriteByte(value[len(value)-1])
-
 	s := strings.ToLower(buf.String())
 	smap.Set(name, s)
 	return s

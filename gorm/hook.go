@@ -12,13 +12,12 @@ import (
 
 // Hook for API
 type Hook struct {
-	auth      func(c *gin.Context) bool
-	AuthByOwn func(string) *Hook
-	handler   func(c *gin.Context)
-	gorm      *GORM
-	pre       func(c *gin.Context)
-	post      func(c *gin.Context)
-	R         func(c *gin.Context)
+	auth    func(c *gin.Context) bool
+	handler func(c *gin.Context)
+	gorm    *GORM
+	pre     func(c *gin.Context)
+	post    func(c *gin.Context)
+	r       func(c *gin.Context)
 }
 
 // FailureHandler handlerss
@@ -80,6 +79,6 @@ func createHooks(gorm *GORM, handler func(c *gin.Context)) *Hook {
 		gorm:    gorm,
 		handler: handler,
 	}
-	h.R = h.route()
+	h.r = h.route()
 	return h
 }
