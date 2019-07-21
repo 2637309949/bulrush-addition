@@ -17,10 +17,10 @@ import (
 type (
 	// GORM Type Defined
 	GORM struct {
-		m    []*Profile
-		conf *Config
-		DB   *gorm.DB
-		API  *API
+		m   []*Profile
+		c   *Config
+		DB  *gorm.DB
+		API *API
 	}
 	// Config defined GORM Config
 	Config struct {
@@ -75,7 +75,7 @@ func (e *GORM) Register(profile *Profile) *GORM {
 	}
 	profile.docs = &[]Doc{}
 	e.m = append(e.m, profile)
-	if e.conf.AutoMigrate {
+	if e.c.AutoMigrate {
 		if err := e.DB.AutoMigrate(profile.Reflector).Error; err != nil {
 			addition.RushLogger.Error(fmt.Sprintf("Error in AutoMigrate:%v", err.Error()))
 		}
@@ -90,26 +90,27 @@ func (e *GORM) Profile(name string) *Profile {
 	}); m != nil {
 		return m.(*Profile)
 	}
-	return nil
+	panic(fmt.Errorf("profile %s not found", name))
 }
 
 // Vars return array of Var
 func (e *GORM) Vars(name string) interface{} {
-	m := e.Profile(name)
-	if m != nil {
-		return addition.CreateSlice(m.Reflector)
-	}
-	panic(fmt.Errorf("manifest %s not found", name))
+	return addition.CreateSlice(e.Profile(name).Reflector)
 }
 
 // Var return  Var
 // reflect from reflector entity
 func (e *GORM) Var(name string) interface{} {
+	return addition.CreateObject(e.Profile(name).Reflector)
+}
+
+// Model return instance
+func (e *GORM) Model(name string) *gorm.DB {
 	m := e.Profile(name)
-	if m != nil {
-		return addition.CreateObject(m.Reflector)
+	if !e.DB.HasTable(m.Reflector) {
+		e.DB.CreateTable(m.Reflector)
 	}
-	panic(fmt.Errorf("manifest %s not found", name))
+	return e.DB.Model(m.Reflector)
 }
 
 // Conf set e conf
@@ -118,7 +119,7 @@ func (e *GORM) Conf(conf *Config) *GORM {
 	if err != nil {
 		panic(err)
 	}
-	e.conf = conf
+	e.c = conf
 	e.DB = db
 	return e
 }

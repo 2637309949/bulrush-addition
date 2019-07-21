@@ -20,7 +20,7 @@ type (
 	// Mongo Type Defined
 	Mongo struct {
 		m       []*Profile
-		conf    *mgo.DialInfo
+		c       *mgo.DialInfo
 		Session *mgo.Session
 		API     *API
 	}
@@ -82,40 +82,29 @@ func (e *Mongo) Profile(name string) *Profile {
 	}); m != nil {
 		return m.(*Profile)
 	}
-	return nil
+	panic(fmt.Errorf("profile %s not found", name))
 }
 
 // Vars return array of Var
 func (e *Mongo) Vars(name string) interface{} {
-	m := e.Profile(name)
-	if m != nil {
-		return addition.CreateSlice(m.Reflector)
-	}
-	panic(fmt.Errorf("manifest %s not found", name))
+	return addition.CreateSlice(e.Profile(name).Reflector)
 }
 
 // Var return  Var
 // reflect from reflector entity
 func (e *Mongo) Var(name string) interface{} {
-	m := e.Profile(name)
-	if m != nil {
-		return addition.CreateObject(m.Reflector)
-	}
-	panic(fmt.Errorf("manifest %s not found", name))
+	return addition.CreateObject(e.Profile(name).Reflector)
 }
 
 // Model return instance
 // throw error if not exists these model
 func (e *Mongo) Model(name string) *mgo.Collection {
 	m := e.Profile(name)
-	if m != nil {
-		db := addition.Some(m.DB, e.conf.Database).(string)
-		collect := addition.Some(m.Collection, name).(string)
-		collect = strings.ToLower(collect)
-		collect = inflection.Plural(collect)
-		return e.Session.DB(db).C(collect)
-	}
-	panic(fmt.Errorf("manifest %s not found", name))
+	db := addition.Some(m.DB, e.c.Database).(string)
+	collect := addition.Some(m.Collection, name).(string)
+	collect = strings.ToLower(collect)
+	collect = inflection.Plural(collect)
+	return e.Session.DB(db).C(collect)
 }
 
 // Conf defined conf
@@ -124,7 +113,7 @@ func (e *Mongo) Conf(conf *mgo.DialInfo) *Mongo {
 	if err != nil {
 		panic(err)
 	}
-	e.conf = conf
+	e.c = conf
 	e.Session = session
 	return e
 }
