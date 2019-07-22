@@ -188,7 +188,7 @@ func shuttle(key string, value interface{}) (string, error) {
 	}
 	isDirect := isLeastDirect(key, value)
 	if isDirect {
-		return direct2Sql(key, "=", value), nil
+		return direct2Sql(columnNamer(key), "=", value), nil
 	}
 	return "", errors.New("shuttle6 error")
 }
