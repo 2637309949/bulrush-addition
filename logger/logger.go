@@ -298,7 +298,7 @@ func (j *Journal) output(w *MutiWriter, calldepth int, s string) error {
 }
 
 func (j *Journal) fprintf(w *MutiWriter, format string, a ...interface{}) {
-	j.output(w, 2, fmt.Sprintf(format, a...))
+	j.output(w, 3, fmt.Sprintf(format, a...))
 }
 
 // AppendTransports defined append transports

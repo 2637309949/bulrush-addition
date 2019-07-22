@@ -40,7 +40,7 @@ func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}, "id": id}, c, struct{ name string }{name: name})
+	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}, "id": id}, c, struct{ Name string }{Name: name})
 
 	if err := q.Build(q.Cond); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -80,7 +80,7 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}}, c, struct{ name string }{name: name})
+	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"deleted_at": map[string]interface{}{"$exists": false}}, c, struct{ Name string }{Name: name})
 
 	if err := q.Build(q.Cond); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -214,7 +214,7 @@ func remove(name string, c *gin.Context, ext *GORM, opts *Opts) {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "no id found!"})
 			return
 		}
-		q.Cond = opts.RouteHooks.Delete.Cond(map[string]interface{}{"ID": id}, c, struct{ name string }{name: name})
+		q.Cond = opts.RouteHooks.Delete.Cond(map[string]interface{}{"ID": id}, c, struct{ Name string }{Name: name})
 		if err := q.Build(q.Cond); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
@@ -252,7 +252,7 @@ func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
 			return
 		}
 		toColumnName(&doc)
-		q.Cond = opts.RouteHooks.Update.Cond(map[string]interface{}{"ID": id}, c, struct{ name string }{name: name})
+		q.Cond = opts.RouteHooks.Update.Cond(map[string]interface{}{"ID": id}, c, struct{ Name string }{Name: name})
 		if err := q.Build(q.Cond); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return

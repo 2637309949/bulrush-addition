@@ -41,7 +41,7 @@ func one(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}, "ID": map[string]interface{}{"$oid": id}}, c, struct{ name string }{name: name})
+	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}, "ID": map[string]interface{}{"$oid": id}}, c, struct{ Name string }{Name: name})
 
 	if err := q.Build(q.Cond); err != nil {
 		addition.RushLogger.Error(err.Error())
@@ -67,7 +67,7 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}}, c, struct{ name string }{name: name})
+	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}}, c, struct{ Name string }{Name: name})
 
 	if err := q.Build(q.Cond); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -151,7 +151,7 @@ func remove(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		return bson.ObjectIdHex(x["ID"].(string))
 	}).([]bson.ObjectId)
 
-	cond := opts.RouteHooks.Delete.Cond(bson.M{"_id": bson.M{"$in": ids}}, c, struct{ name string }{name: name})
+	cond := opts.RouteHooks.Delete.Cond(bson.M{"_id": bson.M{"$in": ids}}, c, struct{ Name string }{Name: name})
 	if err := Model.Update(cond, bson.M{"$set": bson.M{"_deleted": time.Now()}}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -199,7 +199,7 @@ func update(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		out := map[string]interface{}{}
 		bsonByte, err := bson.Marshal(x)
 		bson.Unmarshal(bsonByte, &out)
-		cond := opts.RouteHooks.Update.Cond(bson.M{"_id": out["_id"]}, c, struct{ name string }{name: name})
+		cond := opts.RouteHooks.Update.Cond(bson.M{"_id": out["_id"]}, c, struct{ Name string }{Name: name})
 		if err = Model.Update(cond, bson.M{"$set": out}); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return

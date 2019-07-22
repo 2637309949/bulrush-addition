@@ -47,7 +47,7 @@ type (
 		Pre  func(*gin.Context)
 		Post func(*gin.Context)
 		Auth func(c *gin.Context) bool
-		Cond func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{}
+		Cond func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{}
 	}
 	// ListHook defined list hook opts
 	ListHook struct {
@@ -57,7 +57,7 @@ type (
 		AuthOwn   bool
 		OwnKey    string
 		AuthByOwn func(*Hook) func(string) *Hook
-		Cond      func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{}
+		Cond      func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{}
 	}
 	// CreateHook defined create hook opts
 	CreateHook struct {
@@ -72,7 +72,7 @@ type (
 		Post func(*gin.Context)
 		Auth func(*gin.Context) bool
 		Form func(form) form
-		Cond func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{}
+		Cond func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{}
 	}
 	// DeleteHook defined delete hook opts
 	DeleteHook struct {
@@ -80,7 +80,7 @@ type (
 		Post func(*gin.Context)
 		Auth func(*gin.Context) bool
 		Form func(form) form
-		Cond func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{}
+		Cond func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{}
 	}
 )
 
@@ -109,9 +109,9 @@ func (one *OneHook) auth() func(c *gin.Context) bool {
 	return one.Auth
 }
 
-func (one *OneHook) cond() func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{} {
+func (one *OneHook) cond() func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{} {
 	if one.Cond == nil {
-		return func(cond map[string]interface{}, c *gin.Context, info struct{ name string }) map[string]interface{} {
+		return func(cond map[string]interface{}, c *gin.Context, info struct{ Name string }) map[string]interface{} {
 			return cond
 		}
 	}
@@ -156,9 +156,9 @@ func (list *ListHook) authByOwn() func(*Hook) func(string) *Hook {
 	return list.AuthByOwn
 }
 
-func (list *ListHook) cond() func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{} {
+func (list *ListHook) cond() func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{} {
 	if list.Cond == nil {
-		return func(cond map[string]interface{}, c *gin.Context, info struct{ name string }) map[string]interface{} {
+		return func(cond map[string]interface{}, c *gin.Context, info struct{ Name string }) map[string]interface{} {
 			return cond
 		}
 	}
@@ -233,9 +233,9 @@ func (update *UpdateHook) form() func(form form) form {
 	return update.Form
 }
 
-func (update *UpdateHook) cond() func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{} {
+func (update *UpdateHook) cond() func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{} {
 	if update.Cond == nil {
-		return func(cond map[string]interface{}, c *gin.Context, info struct{ name string }) map[string]interface{} {
+		return func(cond map[string]interface{}, c *gin.Context, info struct{ Name string }) map[string]interface{} {
 			return cond
 		}
 	}
@@ -251,9 +251,9 @@ func (delete *DeleteHook) form() func(form) form {
 	return delete.Form
 }
 
-func (delete *DeleteHook) cond() func(map[string]interface{}, *gin.Context, struct{ name string }) map[string]interface{} {
+func (delete *DeleteHook) cond() func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{} {
 	if delete.Cond == nil {
-		return func(cond map[string]interface{}, c *gin.Context, info struct{ name string }) map[string]interface{} {
+		return func(cond map[string]interface{}, c *gin.Context, info struct{ Name string }) map[string]interface{} {
 			return cond
 		}
 	}
@@ -424,119 +424,49 @@ func (opts *Opts) mergeOpts(upOpts *Opts) *Opts {
 	newOpts := &Opts{}
 	newOpts = newOpts.withDefault()
 
-	newOpts.Prefix = opts.Prefix
-	if upOpts.Prefix != "" {
-		newOpts.Prefix = upOpts.Prefix
-	}
+	newOpts.Prefix = utils.Some(upOpts.Prefix, opts.Prefix).(string)
+	newOpts.FeaturePrefix = utils.Some(upOpts.FeaturePrefix, opts.FeaturePrefix).(string)
 
-	newOpts.FeaturePrefix = opts.FeaturePrefix
-	if upOpts.FeaturePrefix != "" {
-		newOpts.FeaturePrefix = upOpts.FeaturePrefix
-	}
+	upOpts.RoutePrefixs = utils.Some(upOpts.RoutePrefixs, opts.RoutePrefixs).(*RoutePrefixs)
+	newOpts.RoutePrefixs.opts = utils.Some(upOpts.RoutePrefixs.opts, opts.RoutePrefixs.opts).(*Opts)
+	newOpts.RoutePrefixs.One = utils.Some(upOpts.RoutePrefixs.One, opts.RoutePrefixs.One).(func(string) string)
+	newOpts.RoutePrefixs.List = utils.Some(upOpts.RoutePrefixs.List, opts.RoutePrefixs.List).(func(string) string)
+	newOpts.RoutePrefixs.Create = utils.Some(upOpts.RoutePrefixs.Create, opts.RoutePrefixs.Create).(func(string) string)
+	newOpts.RoutePrefixs.Update = utils.Some(upOpts.RoutePrefixs.Update, opts.RoutePrefixs.Update).(func(string) string)
+	newOpts.RoutePrefixs.Delete = utils.Some(upOpts.RoutePrefixs.Delete, opts.RoutePrefixs.Delete).(func(string) string)
 
-	newOpts.RoutePrefixs = opts.RoutePrefixs
-	if upOpts.RoutePrefixs != nil {
-		if upOpts.RoutePrefixs.opts != nil {
-			newOpts.RoutePrefixs.opts = upOpts.RoutePrefixs.opts
-		}
-		if upOpts.RoutePrefixs.One != nil {
-			newOpts.RoutePrefixs.One = upOpts.RoutePrefixs.One
-		}
-		if upOpts.RoutePrefixs.List != nil {
-			newOpts.RoutePrefixs.List = upOpts.RoutePrefixs.List
-		}
-		if upOpts.RoutePrefixs.Create != nil {
-			newOpts.RoutePrefixs.Create = upOpts.RoutePrefixs.Create
-		}
-		if upOpts.RoutePrefixs.Update != nil {
-			newOpts.RoutePrefixs.Update = upOpts.RoutePrefixs.Update
-		}
-		if upOpts.RoutePrefixs.Delete != nil {
-			newOpts.RoutePrefixs.Delete = upOpts.RoutePrefixs.Delete
-		}
-	}
+	upOpts.RouteHooks = utils.Some(upOpts.RouteHooks, opts.RouteHooks).(*RouteHooks)
+	upOpts.RouteHooks.One = utils.Some(upOpts.RouteHooks.One, opts.RouteHooks.One).(*OneHook)
+	newOpts.RouteHooks.One.Pre = utils.Some(upOpts.RouteHooks.One.Pre, opts.RouteHooks.One.Pre).(func(*gin.Context))
+	newOpts.RouteHooks.One.Post = utils.Some(upOpts.RouteHooks.One.Post, opts.RouteHooks.One.Post).(func(*gin.Context))
+	newOpts.RouteHooks.One.Cond = utils.Some(upOpts.RouteHooks.One.Cond, opts.RouteHooks.One.Cond).(func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{})
+	newOpts.RouteHooks.One.Auth = utils.Some(upOpts.RouteHooks.One.Auth, opts.RouteHooks.One.Auth).(func(c *gin.Context) bool)
 
-	if upOpts.RouteHooks != nil {
-		if upOpts.RouteHooks.One != nil {
-			if upOpts.RouteHooks.One.Pre != nil {
-				newOpts.RouteHooks.One.Pre = upOpts.RouteHooks.One.Pre
-			}
-			if upOpts.RouteHooks.One.Post != nil {
-				newOpts.RouteHooks.One.Post = upOpts.RouteHooks.One.Post
-			}
-			if upOpts.RouteHooks.One.Cond != nil {
-				newOpts.RouteHooks.One.Cond = upOpts.RouteHooks.One.Cond
-			}
-			if upOpts.RouteHooks.One.Auth != nil {
-				newOpts.RouteHooks.One.Auth = upOpts.RouteHooks.One.Auth
-			}
-		}
-		if upOpts.RouteHooks.List != nil {
-			if upOpts.RouteHooks.List.Pre != nil {
-				newOpts.RouteHooks.List.Pre = upOpts.RouteHooks.List.Pre
-			}
-			if upOpts.RouteHooks.List.Post != nil {
-				newOpts.RouteHooks.List.Post = upOpts.RouteHooks.List.Post
-			}
-			if upOpts.RouteHooks.List.Cond != nil {
-				newOpts.RouteHooks.List.Cond = upOpts.RouteHooks.List.Cond
-			}
-			if upOpts.RouteHooks.List.Auth != nil {
-				newOpts.RouteHooks.List.Auth = upOpts.RouteHooks.List.Auth
-			}
-			if upOpts.RouteHooks.List.AuthByOwn != nil {
-				newOpts.RouteHooks.List.AuthByOwn = upOpts.RouteHooks.List.AuthByOwn
-			}
-		}
-		if upOpts.RouteHooks.Update != nil {
-			if upOpts.RouteHooks.Update.Pre != nil {
-				newOpts.RouteHooks.Update.Pre = upOpts.RouteHooks.Update.Pre
-			}
-			if upOpts.RouteHooks.Update.Post != nil {
-				newOpts.RouteHooks.Update.Post = upOpts.RouteHooks.Update.Post
-			}
-			if upOpts.RouteHooks.Update.Auth != nil {
-				newOpts.RouteHooks.Update.Auth = upOpts.RouteHooks.Update.Auth
-			}
-			if upOpts.RouteHooks.Update.Form != nil {
-				newOpts.RouteHooks.Update.Form = upOpts.RouteHooks.Update.Form
-			}
-			if upOpts.RouteHooks.Update.Cond != nil {
-				newOpts.RouteHooks.Update.Cond = upOpts.RouteHooks.Update.Cond
-			}
-		}
-		if upOpts.RouteHooks.Create != nil {
-			if upOpts.RouteHooks.Create.Pre != nil {
-				newOpts.RouteHooks.Create.Pre = upOpts.RouteHooks.Create.Pre
-			}
-			if upOpts.RouteHooks.Create.Post != nil {
-				newOpts.RouteHooks.Create.Post = upOpts.RouteHooks.Create.Post
-			}
-			if upOpts.RouteHooks.Create.Auth != nil {
-				newOpts.RouteHooks.Create.Auth = upOpts.RouteHooks.Create.Auth
-			}
-			if upOpts.RouteHooks.Create.Form != nil {
-				newOpts.RouteHooks.Create.Form = upOpts.RouteHooks.Create.Form
-			}
-		}
-		if upOpts.RouteHooks.Delete != nil {
-			if upOpts.RouteHooks.Delete.Pre != nil {
-				newOpts.RouteHooks.Delete.Pre = upOpts.RouteHooks.Delete.Pre
-			}
-			if upOpts.RouteHooks.Delete.Post != nil {
-				newOpts.RouteHooks.Delete.Post = upOpts.RouteHooks.Delete.Post
-			}
-			if upOpts.RouteHooks.Delete.Auth != nil {
-				newOpts.RouteHooks.Delete.Auth = upOpts.RouteHooks.Delete.Auth
-			}
-			if upOpts.RouteHooks.Delete.Form != nil {
-				newOpts.RouteHooks.Delete.Form = upOpts.RouteHooks.Delete.Form
-			}
-			if upOpts.RouteHooks.Delete.Cond != nil {
-				newOpts.RouteHooks.Delete.Cond = upOpts.RouteHooks.Delete.Cond
-			}
-		}
-	}
+	upOpts.RouteHooks.List = utils.Some(upOpts.RouteHooks.List, opts.RouteHooks.List).(*ListHook)
+	newOpts.RouteHooks.List.Pre = utils.Some(upOpts.RouteHooks.List.Pre, opts.RouteHooks.List.Pre).(func(*gin.Context))
+	newOpts.RouteHooks.List.Post = utils.Some(upOpts.RouteHooks.List.Post, opts.RouteHooks.List.Post).(func(*gin.Context))
+	newOpts.RouteHooks.List.Cond = utils.Some(upOpts.RouteHooks.List.Cond, opts.RouteHooks.List.Cond).(func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{})
+	newOpts.RouteHooks.List.Auth = utils.Some(upOpts.RouteHooks.List.Auth, opts.RouteHooks.List.Auth).(func(c *gin.Context) bool)
+
+	upOpts.RouteHooks.Update = utils.Some(upOpts.RouteHooks.Update, opts.RouteHooks.Update).(*UpdateHook)
+	newOpts.RouteHooks.Update.Pre = utils.Some(upOpts.RouteHooks.Update.Pre, opts.RouteHooks.Update.Pre).(func(*gin.Context))
+	newOpts.RouteHooks.Update.Post = utils.Some(upOpts.RouteHooks.Update.Post, opts.RouteHooks.Update.Post).(func(*gin.Context))
+	newOpts.RouteHooks.Update.Cond = utils.Some(upOpts.RouteHooks.Update.Cond, opts.RouteHooks.Update.Cond).(func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{})
+	newOpts.RouteHooks.Update.Form = utils.Some(upOpts.RouteHooks.Update.Form, opts.RouteHooks.Update.Form).(func(form) form)
+	newOpts.RouteHooks.Update.Auth = utils.Some(upOpts.RouteHooks.Update.Auth, opts.RouteHooks.Update.Auth).(func(c *gin.Context) bool)
+
+	upOpts.RouteHooks.Create = utils.Some(upOpts.RouteHooks.Create, opts.RouteHooks.Create).(*CreateHook)
+	newOpts.RouteHooks.Create.Pre = utils.Some(upOpts.RouteHooks.Create.Pre, opts.RouteHooks.Create.Pre).(func(*gin.Context))
+	newOpts.RouteHooks.Create.Post = utils.Some(upOpts.RouteHooks.Create.Post, opts.RouteHooks.Create.Post).(func(*gin.Context))
+	newOpts.RouteHooks.Create.Form = utils.Some(upOpts.RouteHooks.Create.Form, opts.RouteHooks.Create.Form).(func(form) form)
+	newOpts.RouteHooks.Create.Auth = utils.Some(upOpts.RouteHooks.Create.Auth, opts.RouteHooks.Create.Auth).(func(c *gin.Context) bool)
+
+	upOpts.RouteHooks.Delete = utils.Some(upOpts.RouteHooks.Delete, opts.RouteHooks.Delete).(*DeleteHook)
+	newOpts.RouteHooks.Delete.Pre = utils.Some(upOpts.RouteHooks.Delete.Pre, opts.RouteHooks.Delete.Pre).(func(*gin.Context))
+	newOpts.RouteHooks.Delete.Post = utils.Some(upOpts.RouteHooks.Delete.Post, opts.RouteHooks.Delete.Post).(func(*gin.Context))
+	newOpts.RouteHooks.Delete.Cond = utils.Some(upOpts.RouteHooks.Delete.Cond, opts.RouteHooks.Delete.Cond).(func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{})
+	newOpts.RouteHooks.Delete.Form = utils.Some(upOpts.RouteHooks.Delete.Form, opts.RouteHooks.Delete.Form).(func(form) form)
+	newOpts.RouteHooks.Delete.Auth = utils.Some(upOpts.RouteHooks.Delete.Auth, opts.RouteHooks.Delete.Auth).(func(c *gin.Context) bool)
 	return newOpts
 }
 
