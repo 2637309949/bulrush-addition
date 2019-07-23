@@ -21,8 +21,8 @@ import (
 )
 
 type form struct {
-	Docs     []map[string]interface{} `form:"docs" json:"docs" xml:"docs"`
-	Category interface{}              `form:"category" json:"category" xml:"category" `
+	Docs     []map[string]interface{} `form:"docs" json:"docs" xml:"docs" binding:"required"`
+	Category interface{}              `form:"category" json:"category" xml:"category" binding:"required"`
 }
 
 func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
@@ -257,7 +257,7 @@ func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
-		if err := tx.Model(one).Updates(doc).Error; err != nil {
+		if err := tx.Model(one).Where(q.SQL).Updates(doc).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return

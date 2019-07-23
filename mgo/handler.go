@@ -20,8 +20,8 @@ import (
 )
 
 type form struct {
-	Docs     []map[string]interface{} `form:"docs" json:"docs" xml:"docs"`
-	Category interface{}              `form:"category" json:"category" xml:"category" `
+	Docs     []map[string]interface{} `form:"docs" json:"docs" xml:"docs" binding:"required"`
+	Category interface{}              `form:"category" json:"category" xml:"category" binding:"required"`
 }
 
 func one(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
