@@ -62,12 +62,13 @@ type (
 	}
 )
 
-// Maxsize file size
-const Maxsize = 1024 * 1024 * 10
-
 const (
+	// Maxsize file size
+	Maxsize = 1024 * 1024 * 10
+	// HTTP level
+	HTTP LEVEL = iota + 1
 	// ERROR level
-	ERROR LEVEL = iota + 1
+	ERROR
 	// WARN level
 	WARN
 	// INFO level
@@ -78,8 +79,6 @@ const (
 	DEBUG
 	// SILLY level
 	SILLY
-	// HTTP level
-	HTTP
 )
 
 // Error level
