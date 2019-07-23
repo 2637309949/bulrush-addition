@@ -13,6 +13,7 @@
         - [Use as a bulrush plugin](#use-as-a-bulrush-plugin-1)
         - [Defined model and custom your own config if you need](#defined-model-and-custom-your-own-config-if-you-need-1)
     - [Logger](#logger)
+        - [Add Transport](#add-transport)
     - [Redis](#redis)
     - [Apidoc](#apidoc)
         - [Install apidoc](#install-apidoc)
@@ -128,26 +129,28 @@ func RegisterUser(r *gin.RouterGroup) {
 }
 ```
 ### Logger
+
+#### Add Transport
 ```
-// Logger application logger
-var Logger = addition.RushLogger.AppendTransports([]*logger.Transport{
-	&logger.Transport{
-		Dirname: path.Join(path.Join(".", utils.Some(conf.Cfg.Log.Path, "logs").(string)), "error"),
-		Level:   logger.ERROR,
-		Maxsize: logger.Maxsize,
-	},
-	&logger.Transport{
-		Dirname: path.Join(path.Join(".", utils.Some(conf.Cfg.Log.Path, "logs").(string)), "combined"),
-		Level:   logger.SILLY,
-		Maxsize: logger.Maxsize,
-	},
-	// console level
-	// &logger.Transport{
-	// 	Level: logger.SILLY,
-	// },
-}...)
-Logger.Info("after")
+var Logger = addition.RushLogger.
+	AppendTransports(
+		&logger.Transport{
+			Dirname: path.Join(path.Join(".", utils.Some(conf.Cfg.Log.Path, "logs").(string)), "error"),
+			Level:   logger.ERROR,
+			Maxsize: logger.Maxsize,
+		},
+		&logger.Transport{
+			Dirname: path.Join(path.Join(".", utils.Some(conf.Cfg.Log.Path, "logs").(string)), "combined"),
+			Level:   logger.SILLY,
+			Maxsize: logger.Maxsize,
+		},
+	).
+	Init(func(j *logger.Journal) {
+		j.SetFlags((logger.LstdFlags | logger.Llongfile))
+	})
 ```
+![bulrush logger](./assets/logger.png)
+
 
 ### Redis
 ```go
@@ -206,6 +209,7 @@ var _ = APIDoc.
 	})
 app.Use(APIDoc)
 ```
+![bulrush apidoc](./assets/apidoc.png)
 
 ## MIT License
 
