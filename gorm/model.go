@@ -11,5 +11,5 @@ type Model struct {
 	ID        uint       `gorm:"comment:'模型ID';primary_key"`
 	CreatedAt *time.Time `gorm:"comment:'创建时间'"`
 	UpdatedAt *time.Time `gorm:"comment:'更新时间'"`
-	DeletedAt *time.Time `gorm:"comment:'删除时间'"`
+	DeletedAt *time.Time `sql:"index" gorm:"comment:'删除时间'"`
 }
