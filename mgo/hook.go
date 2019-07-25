@@ -22,10 +22,10 @@ type Hook struct {
 
 // FailureHandler handlerss
 var FailureHandler = func(c *gin.Context) {
-	c.JSON(http.StatusForbidden, gin.H{
-		"message": "Access Denied, you don't have permission",
+	c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+		"message": "Internal Server Error",
+		"stack":   "Access Denied, you don't have permission",
 	})
-	c.Abort()
 }
 
 // route defined gin middle

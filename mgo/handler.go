@@ -30,27 +30,38 @@ func one(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	key := utils.FindStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
 	id := c.Param(key)
 	if !bson.IsObjectIdHex(id) {
-		addition.RushLogger.Error("not a valid id")
-		c.JSON(http.StatusNotAcceptable, gin.H{"message": "not a valid id"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   "not a valid id",
+		})
 		return
 	}
 	q := NewQuery()
 	q.name = name
 	q.model = one
 	if err := c.BindQuery(&q.Query); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}, "ID": map[string]interface{}{"$oid": id}}, c, struct{ Name string }{Name: name})
 
 	if err := q.Build(q.Cond); err != nil {
 		addition.RushLogger.Error(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	if err := Model.Pipe(q.Pipe).One(one); err != nil {
 		addition.RushLogger.Error(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, one)
@@ -64,17 +75,26 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	q.name = name
 	q.model = one
 	if err := c.ShouldBindQuery(&q.Query); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}}, c, struct{ Name string }{Name: name})
 
 	if err := q.Build(q.Cond); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	if err := Model.Pipe(q.Pipe).All(list); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	totalrecords, _ := Model.Find(q.Cond).Count()
@@ -106,17 +126,26 @@ func create(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	var list = mgo.Vars(name)
 	Model := mgo.Model(name)
 	if err := c.ShouldBind(&form); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	form = opts.RouteHooks.Create.Form(form)
 	docsByte, err := json.Marshal(form.Docs)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	if err := json.Unmarshal(docsByte, list); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	list = reflect.ValueOf(list).Elem().Interface()
@@ -124,7 +153,10 @@ func create(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		return x
 	}).([]interface{})
 	if err := Model.Insert(docs...); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -136,14 +168,20 @@ func remove(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	var form form
 	Model := mgo.Model(name)
 	if err := c.ShouldBind(&form); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	form = opts.RouteHooks.Delete.Form(form)
 	for _, item := range form.Docs {
 		_, ok := item["ID"]
 		if !ok {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "no id found!"})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   "no id found!",
+			})
 			return
 		}
 	}
@@ -153,7 +191,10 @@ func remove(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 
 	cond := opts.RouteHooks.Delete.Cond(bson.M{"_id": bson.M{"$in": ids}}, c, struct{ Name string }{Name: name})
 	if err := Model.Update(cond, bson.M{"$set": bson.M{"_deleted": time.Now()}}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -166,7 +207,10 @@ func update(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	Model := mgo.Model(name)
 	one := mgo.Var(name)
 	if err := c.ShouldBind(&form); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	form = opts.RouteHooks.Update.Form(form)
@@ -192,7 +236,10 @@ func update(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 	}).([]interface{})
 
 	if len(docs) != len(form.Docs) {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "not exists this key in model"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   "not exists this key in model",
+		})
 		return
 	}
 	funk.ForEach(docs, func(x interface{}) {
@@ -201,7 +248,10 @@ func update(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		bson.Unmarshal(bsonByte, &out)
 		cond := opts.RouteHooks.Update.Cond(bson.M{"_id": out["_id"]}, c, struct{ Name string }{Name: name})
 		if err = Model.Update(cond, bson.M{"$set": out}); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   err.Error(),
+			})
 			return
 		}
 	})

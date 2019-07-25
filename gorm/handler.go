@@ -33,17 +33,26 @@ func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	q := NewQuery()
 	if err != nil {
 		addition.RushLogger.Error(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	if err := c.BindQuery(&q.Query); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"deletedAt": map[string]interface{}{"$exists": false}, "id": id}, c, struct{ Name string }{Name: name})
 
 	if err := q.Build(q.Cond); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 
@@ -64,7 +73,10 @@ func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	}).First(one)
 
 	if err := db.Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, one)
@@ -77,13 +89,19 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	db := ext.DB
 	q := NewQuery()
 	if err := c.BindQuery(&q.Query); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"deletedAt": map[string]interface{}{"$exists": false}}, c, struct{ Name string }{Name: name})
 
 	if err := q.Build(q.Cond); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 
@@ -117,13 +135,19 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	}).Find(list)
 	if err := db.Error; err != nil {
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   err.Error(),
+			})
 			return
 		}
 	}
 	if err := ext.DB.Model(one).Where(q.SQL).Count(&totalrecords).Error; err != nil {
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   err.Error(),
+			})
 			return
 		}
 	}
@@ -156,17 +180,26 @@ func create(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	var form form
 	list := ext.Vars(name)
 	if err := c.ShouldBindJSON(&form); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	form = opts.RouteHooks.Create.Form(form)
 	docsByte, err := json.Marshal(form.Docs)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	if err := json.Unmarshal(docsByte, list); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	validate := validator.New()
@@ -177,20 +210,29 @@ func create(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		item := listValue.Index(index).Interface()
 		if err := validate.Struct(item); err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   err.Error(),
+			})
 			return
 		}
 		newValue := reflect.New(reflect.TypeOf(item))
 		newValue.Elem().Set(reflect.ValueOf(item))
 		if err := tx.Create(newValue.Interface()).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   err.Error(),
+			})
 			return
 		}
 
 	}
 	if err = tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -203,7 +245,10 @@ func remove(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	bind := ext.Var(name)
 	q := NewQuery()
 	if err := c.ShouldBindJSON(&form); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	form = opts.RouteHooks.Delete.Form(form)
@@ -211,23 +256,35 @@ func remove(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	for _, item := range form.Docs {
 		id, ok := item["ID"]
 		if !ok {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "no id found!"})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   "no id found",
+			})
 			return
 		}
 		q.Cond = opts.RouteHooks.Delete.Cond(map[string]interface{}{"ID": id}, c, struct{ Name string }{Name: name})
 		if err := q.Build(q.Cond); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   err.Error(),
+			})
 			return
 		}
 		if err := tx.Model(bind).Where(q.SQL).Update(map[string]interface{}{"deleted_at": time.Now()}).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   err.Error(),
+			})
 			return
 		}
 	}
 	err := tx.Commit().Error
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -239,7 +296,10 @@ func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	var form form
 	q := NewQuery()
 	if err := c.ShouldBindJSON(&form); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	form = opts.RouteHooks.Create.Form(form)
@@ -248,24 +308,36 @@ func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		one := ext.Var(name)
 		id, ok := doc["ID"]
 		if !ok {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "no id found!"})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   "no id found",
+			})
 			return
 		}
 		toColumnName(&doc)
 		q.Cond = opts.RouteHooks.Update.Cond(map[string]interface{}{"ID": id}, c, struct{ Name string }{Name: name})
 		if err := q.Build(q.Cond); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   err.Error(),
+			})
 			return
 		}
 		if err := tx.Model(one).Where(q.SQL).Updates(doc).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   err.Error(),
+			})
 			return
 		}
 	}
 	err := tx.Commit().Error
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Internal Server Error",
+			"stack":   err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
