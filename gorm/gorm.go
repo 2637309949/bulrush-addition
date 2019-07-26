@@ -115,10 +115,14 @@ func (e *GORM) Model(name string) *gorm.DB {
 
 // Conf set e conf
 func (e *GORM) Conf(conf *Config) *GORM {
-	db, err := gorm.Open(conf.DBType, conf.URL)
-	if err != nil {
+	var (
+		db  *gorm.DB
+		err error
+	)
+	if db, err = gorm.Open(conf.DBType, conf.URL); err != nil {
 		panic(err)
 	}
+	addition.RushLogger.Info("%v:Connection has been established successfully, URL:%v", conf.DBType, conf.URL)
 	e.c = conf
 	e.DB = db
 	return e
