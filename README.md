@@ -8,10 +8,18 @@
         - [Create mgoext](#create-mgoext)
         - [Use as a bulrush plugin](#use-as-a-bulrush-plugin)
         - [Defined model and custom your own config if you need](#defined-model-and-custom-your-own-config-if-you-need)
+        - [Defined your config](#defined-your-config)
+            - [Global](#global)
+            - [Profile](#profile)
+            - [Code](#code)
     - [gorm addition](#gorm-addition)
         - [Create gormext](#create-gormext)
         - [Use as a bulrush plugin](#use-as-a-bulrush-plugin-1)
         - [Defined model and custom your own config if you need](#defined-model-and-custom-your-own-config-if-you-need-1)
+        - [Defined your config](#defined-your-config-1)
+            - [Global](#global-1)
+            - [Profile](#profile-1)
+            - [Code](#code-1)
     - [Logger](#logger)
         - [Add Transport](#add-transport)
     - [Redis](#redis)
@@ -53,7 +61,7 @@ var _ = addition.MGOExt.Register(&mgoext.Profile{
 	DB:        "test",
 	Name:      "user",
 	Reflector: &User{},
-	BanHook:   true,
+	BanHook:   true,     // all hook never to added to router, should by hand
 })
 
 // RegisterUser inject function
@@ -70,6 +78,74 @@ func RegisterUser(r *gin.RouterGroup) {
 	addition.MGOExt.API.Create(r, "user")
 	addition.MGOExt.API.Update(r, "user")
 	addition.MGOExt.API.Delete(r, "user")
+}
+```
+#### Defined your config
+	Configure the priority levels
+		Global < Profile < Code
+##### Global
+```go
+var MGOExt = mgoext.
+	New().
+	Init(func(ext *mgoext.Mongo) {
+		cfg := &mgo.DialInfo{}
+		if err := conf.Conf.Unmarshal("mongo", cfg); err != nil {
+			panic(err)
+		}
+		ext.Conf(cfg)
+		ext.API.Opts.Prefix = "/template/mgo"
+		ext.API.Opts.RouteHooks = &mgoext.RouteHooks{
+			List: &mgoext.ListHook{
+				Pre: func(c *gin.Context) {
+					Logger.Info("all mgo before")
+				},
+			},
+		}
+	})
+```
+
+##### Profile
+```go
+var _ = addition.MGOExt.Register(&mgoext.Profile{
+	Name:      "User",
+	Reflector: &User{},
+	BanHook:   true,
+	Opts: &mgoext.Opts{
+		RouteHooks: &mgoext.RouteHooks{
+			List: &mgoext.ListHook{
+				Pre: func(c *gin.Context) {
+					addition.Logger.Info("user before")
+				},
+			},
+		},
+	},
+}).Init(func(ext *mgoext.Mongo) {
+	Model := addition.MGOExt.Model("User")
+	for _, key := range []string{"name"} {
+		index := mgo.Index{
+			Key:    []string{key},
+			Unique: true,
+		}
+		if err := Model.EnsureIndex(index); err != nil {
+			addition.Logger.Error(err.Error())
+		}
+	}
+})
+```
+
+##### Code
+```go
+func RegisterUser(r *gin.RouterGroup, role *role.Role) {
+	addition.MGOExt.API.List(r, "User").Pre(func(c *gin.Context) {
+		addition.Logger.Info("after")
+	}).Auth(func(c *gin.Context) bool {
+		return true
+	})
+	addition.MGOExt.API.Feature("feature").List(r, "User")
+	addition.MGOExt.API.One(r, "User", role.Can("r1,r2@p1,p3,p4;r4"))
+	addition.MGOExt.API.Create(r, "User")
+	addition.MGOExt.API.Update(r, "User")
+	addition.MGOExt.API.Delete(r, "User")
 }
 ```
 
@@ -128,6 +204,117 @@ func RegisterUser(r *gin.RouterGroup) {
 	addition.GORMExt.API.Delete(r, "user")
 }
 ```
+
+#### Defined your config
+	Configure the priority levels
+		Global < Profile < Code
+##### Global
+```go
+var GORMExt = gormext.
+	New().
+	Init(func(ext *gormext.GORM) {
+		cfg := &gormext.Config{}
+		if err := conf.Conf.Unmarshal("sql", cfg); err != nil {
+			panic(err)
+		}
+		ext.Conf(cfg)
+		// 建议在数据库创建时指定CHARSET, 这里设置后看gorm log并不起效
+		ext.DB.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8")
+		ext.DB.LogMode(true)
+		ext.API.Opts.Prefix = "/template/gorm"
+		ext.API.Opts.RouteHooks = &gormext.RouteHooks{
+			// only list creator data
+			List: &gormext.ListHook{
+				Cond: func(cond map[string]interface{},
+					c *gin.Context,
+					info struct{ Name string }) map[string]interface{} {
+					iden, _ := c.Get("identify")
+					if iden != nil {
+						token := iden.(*identify.Token)
+						cond["CreatorID"] = token.Extra.(map[string]interface{})["ID"]
+					}
+					return cond
+				},
+			},
+			// only list creator data
+			One: &gormext.OneHook{
+				Cond: func(cond map[string]interface{},
+					c *gin.Context,
+					info struct{ Name string }) map[string]interface{} {
+					iden, _ := c.Get("identify")
+					if iden != nil {
+						token := iden.(*identify.Token)
+						cond["CreatorID"] = token.Extra.(map[string]interface{})["ID"]
+					}
+					return cond
+				},
+			},
+			// only update creator data
+			Update: &gormext.UpdateHook{
+				Cond: func(cond map[string]interface{},
+					c *gin.Context,
+					info struct{ Name string }) map[string]interface{} {
+					iden, _ := c.Get("identify")
+					if iden != nil {
+						token := iden.(*identify.Token)
+						cond["CreatorID"] = token.Extra.(map[string]interface{})["ID"]
+					}
+					return cond
+				},
+			},
+			// only delete creator data
+			Delete: &gormext.DeleteHook{
+				Cond: func(cond map[string]interface{},
+					c *gin.Context,
+					info struct{ Name string }) map[string]interface{} {
+					iden, _ := c.Get("identify")
+					if iden != nil {
+						token := iden.(*identify.Token)
+						cond["CreatorID"] = token.Extra.(map[string]interface{})["ID"]
+					}
+					return cond
+				},
+			},
+		}
+	})
+```
+
+##### Profile
+```go
+var _ = addition.GORMExt.Register(&gormext.Profile{
+	Name:      "User",
+	Reflector: &User{},
+	BanHook:   true,
+	Opts: &gormext.Opts{
+		RouteHooks: &gormext.RouteHooks{
+			List: &gormext.ListHook{
+				Pre: func(c *gin.Context) {
+					addition.Logger.Info("User model pre hook")
+				},
+			},
+		},
+	},
+})
+```
+
+##### Code
+```go
+addition.GORMExt.API.List(r, "User").Post(func(c *gin.Context) {
+	addition.Logger.Info("after")
+}).Auth(func(c *gin.Context) bool {
+	return true
+}).RouteHooks(&gormext.RouteHooks{
+	// Override global config, never query only by own
+	List: &gormext.ListHook{
+		Cond: func(cond map[string]interface{},
+			c *gin.Context,
+			info struct{ Name string }) map[string]interface{} {
+			return cond
+		},
+	},
+})
+```
+
 ### Logger
 
 #### Add Transport

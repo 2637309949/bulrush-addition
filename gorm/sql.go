@@ -23,7 +23,6 @@ func formatFloat64(key string, instruct string, value interface{}) string {
 
 func formatArray(key string, instruct string, value interface{}) string {
 	items := funk.Map(value, func(item interface{}) string {
-		fmt.Println(reflect.TypeOf(item).Kind())
 		if reflect.TypeOf(item).Kind() == reflect.String {
 			return fmt.Sprintf("'%s'", item)
 		}
