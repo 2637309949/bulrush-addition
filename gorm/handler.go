@@ -26,60 +26,52 @@ type form struct {
 }
 
 func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
-	db := ext.DB
-	one := ext.Var(name)
-	key := utils.FindStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
-	id, err := strconv.Atoi(c.Param(key))
-	q := NewQuery()
-	if err != nil {
-		addition.RushLogger.Error(err.Error())
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": "Internal Server Error",
-			"stack":   err.Error(),
-		})
-		return
-	}
-	if err := c.BindQuery(&q.Query); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": "Internal Server Error",
-			"stack":   err.Error(),
-		})
-		return
-	}
-	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"deletedAt": map[string]interface{}{"$exists": false}, "id": id}, c, struct{ Name string }{Name: name})
-
-	if err := q.Build(q.Cond); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": "Internal Server Error",
-			"stack":   err.Error(),
-		})
-		return
-	}
-
-	db = db.Scopes(func(db *gorm.DB) *gorm.DB {
-		if q.Select != "" {
-			return db.Select(q.Select)
+	ret, err := utils.Chain(func(ret interface{}) (interface{}, error) {
+		key := utils.FindStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
+		id, err := strconv.Atoi(c.Param(key))
+		q := NewQuery()
+		if err != nil {
+			addition.RushLogger.Error(err.Error())
+			return nil, err
 		}
-		return db
-	}).Scopes(func(db *gorm.DB) *gorm.DB {
-		funk.ForEach(q.Preload, func(pre string) {
-			if pre != "" {
-				db = db.Preload(pre)
+		if err := c.BindQuery(&q.Query); err != nil {
+			addition.RushLogger.Error(err.Error())
+			return nil, err
+		}
+		q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"deletedAt": map[string]interface{}{"$exists": false}, "id": id}, c, struct{ Name string }{Name: name})
+		if err := q.Build(q.Cond); err != nil {
+			addition.RushLogger.Error(err.Error())
+			return nil, err
+		}
+		return q, nil
+	}, func(ret interface{}) (interface{}, error) {
+		one := ext.Var(name)
+		q := ret.(*Query)
+		err := ext.DB.Scopes(func(db *gorm.DB) *gorm.DB {
+			if q.Select != "" {
+				return db.Select(q.Select)
 			}
-		})
-		return db
-	}).Scopes(func(db *gorm.DB) *gorm.DB {
-		return db.Where(q.SQL)
-	}).First(one)
-
-	if err := db.Error; err != nil {
+			return db
+		}).Scopes(func(db *gorm.DB) *gorm.DB {
+			funk.ForEach(q.Preload, func(pre string) {
+				if pre != "" {
+					db = db.Preload(pre)
+				}
+			})
+			return db
+		}).Scopes(func(db *gorm.DB) *gorm.DB {
+			return db.Where(q.SQL)
+		}).First(one).Error
+		return one, err
+	})
+	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal Server Error",
 			"stack":   err.Error(),
 		})
 		return
 	}
-	c.JSON(http.StatusOK, one)
+	c.JSON(http.StatusOK, ret)
 }
 
 func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
