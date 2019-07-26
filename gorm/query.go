@@ -86,11 +86,7 @@ func (q *Query) BuildCond(cond map[string]interface{}) error {
 	if err = addition.CopyMap(q.Cond, &clone); err != nil {
 		return err
 	}
-	flatCond, err := flatAndToOr(clone)
-	if err != nil {
-		return err
-	}
-	sql, err := shuttle("", flatCond)
+	sql, err := map2sql(clone)
 	if err != nil {
 		return err
 	}
