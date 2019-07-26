@@ -86,22 +86,22 @@ func RegisterUser(r *gin.RouterGroup) {
 ##### Global
 ```go
 var MGOExt = mgoext.
-	New().
-	Init(func(ext *mgoext.Mongo) {
-		cfg := &mgo.DialInfo{}
-		if err := conf.Conf.Unmarshal("mongo", cfg); err != nil {
-			panic(err)
-		}
-		ext.Conf(cfg)
-		ext.API.Opts.Prefix = "/template/mgo"
-		ext.API.Opts.RouteHooks = &mgoext.RouteHooks{
-			List: &mgoext.ListHook{
-				Pre: func(c *gin.Context) {
-					Logger.Info("all mgo before")
-				},
+New().
+Init(func(ext *mgoext.Mongo) {
+	cfg := &mgo.DialInfo{}
+	if err := conf.Conf.Unmarshal("mongo", cfg); err != nil {
+		panic(err)
+	}
+	ext.Conf(cfg)
+	ext.API.Opts.Prefix = "/template/mgo"
+	ext.API.Opts.RouteHooks = &mgoext.RouteHooks{
+		List: &mgoext.ListHook{
+			Pre: func(c *gin.Context) {
+				Logger.Info("all mgo before")
 			},
-		}
-	})
+		},
+	}
+})
 ```
 
 ##### Profile
@@ -211,72 +211,72 @@ func RegisterUser(r *gin.RouterGroup) {
 ##### Global
 ```go
 var GORMExt = gormext.
-	New().
-	Init(func(ext *gormext.GORM) {
-		cfg := &gormext.Config{}
-		if err := conf.Conf.Unmarshal("sql", cfg); err != nil {
-			panic(err)
-		}
-		ext.Conf(cfg)
-		// 建议在数据库创建时指定CHARSET, 这里设置后看gorm log并不起效
-		ext.DB.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8")
-		ext.DB.LogMode(true)
-		ext.API.Opts.Prefix = "/template/gorm"
-		ext.API.Opts.RouteHooks = &gormext.RouteHooks{
-			// only list creator data
-			List: &gormext.ListHook{
-				Cond: func(cond map[string]interface{},
-					c *gin.Context,
-					info struct{ Name string }) map[string]interface{} {
-					iden, _ := c.Get("identify")
-					if iden != nil {
-						token := iden.(*identify.Token)
-						cond["CreatorID"] = token.Extra.(map[string]interface{})["ID"]
-					}
-					return cond
-				},
+New().
+Init(func(ext *gormext.GORM) {
+	cfg := &gormext.Config{}
+	if err := conf.Conf.Unmarshal("sql", cfg); err != nil {
+		panic(err)
+	}
+	ext.Conf(cfg)
+	// 建议在数据库创建时指定CHARSET, 这里设置后看gorm log并不起效
+	ext.DB.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8")
+	ext.DB.LogMode(true)
+	ext.API.Opts.Prefix = "/template/gorm"
+	ext.API.Opts.RouteHooks = &gormext.RouteHooks{
+		// only list creator data
+		List: &gormext.ListHook{
+			Cond: func(cond map[string]interface{},
+				c *gin.Context,
+				info struct{ Name string }) map[string]interface{} {
+				iden, _ := c.Get("identify")
+				if iden != nil {
+					token := iden.(*identify.Token)
+					cond["CreatorID"] = token.Extra.(map[string]interface{})["ID"]
+				}
+				return cond
 			},
-			// only list creator data
-			One: &gormext.OneHook{
-				Cond: func(cond map[string]interface{},
-					c *gin.Context,
-					info struct{ Name string }) map[string]interface{} {
-					iden, _ := c.Get("identify")
-					if iden != nil {
-						token := iden.(*identify.Token)
-						cond["CreatorID"] = token.Extra.(map[string]interface{})["ID"]
-					}
-					return cond
-				},
+		},
+		// only list creator data
+		One: &gormext.OneHook{
+			Cond: func(cond map[string]interface{},
+				c *gin.Context,
+				info struct{ Name string }) map[string]interface{} {
+				iden, _ := c.Get("identify")
+				if iden != nil {
+					token := iden.(*identify.Token)
+					cond["CreatorID"] = token.Extra.(map[string]interface{})["ID"]
+				}
+				return cond
 			},
-			// only update creator data
-			Update: &gormext.UpdateHook{
-				Cond: func(cond map[string]interface{},
-					c *gin.Context,
-					info struct{ Name string }) map[string]interface{} {
-					iden, _ := c.Get("identify")
-					if iden != nil {
-						token := iden.(*identify.Token)
-						cond["CreatorID"] = token.Extra.(map[string]interface{})["ID"]
-					}
-					return cond
-				},
+		},
+		// only update creator data
+		Update: &gormext.UpdateHook{
+			Cond: func(cond map[string]interface{},
+				c *gin.Context,
+				info struct{ Name string }) map[string]interface{} {
+				iden, _ := c.Get("identify")
+				if iden != nil {
+					token := iden.(*identify.Token)
+					cond["CreatorID"] = token.Extra.(map[string]interface{})["ID"]
+				}
+				return cond
 			},
-			// only delete creator data
-			Delete: &gormext.DeleteHook{
-				Cond: func(cond map[string]interface{},
-					c *gin.Context,
-					info struct{ Name string }) map[string]interface{} {
-					iden, _ := c.Get("identify")
-					if iden != nil {
-						token := iden.(*identify.Token)
-						cond["CreatorID"] = token.Extra.(map[string]interface{})["ID"]
-					}
-					return cond
-				},
+		},
+		// only delete creator data
+		Delete: &gormext.DeleteHook{
+			Cond: func(cond map[string]interface{},
+				c *gin.Context,
+				info struct{ Name string }) map[string]interface{} {
+				iden, _ := c.Get("identify")
+				if iden != nil {
+					token := iden.(*identify.Token)
+					cond["CreatorID"] = token.Extra.(map[string]interface{})["ID"]
+				}
+				return cond
 			},
-		}
-	})
+		},
+	}
+})
 ```
 
 ##### Profile
