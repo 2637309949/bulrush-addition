@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	utils "github.com/2637309949/bulrush-utils"
+	"github.com/thoas/go-funk"
 )
 
 var smap = utils.NewSafeMap()
@@ -98,4 +99,10 @@ func toColumnName(m *map[string]interface{}) {
 		(*m)[c] = v
 		delete(*m, k)
 	}
+}
+
+func toArrayInterface(value interface{}) []interface{} {
+	return funk.Map(value, func(item interface{}) interface{} {
+		return item
+	}).([]interface{})
 }

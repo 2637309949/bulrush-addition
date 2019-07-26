@@ -52,7 +52,18 @@ func direct2Sql(key string, instruct string, value interface{}) string {
 	if reflect.TypeOf(value).Kind() == reflect.String {
 		return formatString(key, instruct, value)
 	}
-	if reflect.TypeOf(value).Kind() == reflect.Float64 {
+	if reflect.TypeOf(value).Kind() == reflect.Int ||
+		reflect.TypeOf(value).Kind() == reflect.Int8 ||
+		reflect.TypeOf(value).Kind() == reflect.Int16 ||
+		reflect.TypeOf(value).Kind() == reflect.Int64 ||
+		reflect.TypeOf(value).Kind() == reflect.Uint ||
+		reflect.TypeOf(value).Kind() == reflect.Uint8 ||
+		reflect.TypeOf(value).Kind() == reflect.Uint16 ||
+		reflect.TypeOf(value).Kind() == reflect.Uint32 ||
+		reflect.TypeOf(value).Kind() == reflect.Uint64 ||
+		reflect.TypeOf(value).Kind() == reflect.Uintptr ||
+		reflect.TypeOf(value).Kind() == reflect.Float32 ||
+		reflect.TypeOf(value).Kind() == reflect.Float64 {
 		return formatFloat64(key, instruct, value)
 	}
 	if reflect.TypeOf(value).Kind() == reflect.Slice {
@@ -120,32 +131,29 @@ func flatAndToOr(where map[string]interface{}) (map[string]interface{}, error) {
 	if ok && reflect.Slice == reflect.TypeOf(or).Kind() {
 		newMap := map[string]interface{}{}
 		newMap["$or"] = []map[string]interface{}{}
-		orArr, ok := or.([]interface{})
-		if ok {
-			for _, item := range orArr {
-				subItem, ok := item.(map[string]interface{})
-				_, ok = subItem["$or"]
-				for wk, wv := range where {
-					if wk != "$or" {
-						subItem[wk] = wv
-					}
+		orArr := toArrayInterface(or)
+		for _, item := range orArr {
+			subItem, ok := item.(map[string]interface{})
+			_, ok = subItem["$or"]
+			for wk, wv := range where {
+				if wk != "$or" {
+					subItem[wk] = wv
 				}
-				if ok {
-					subItem, err = flatAndToOr(subItem)
-					if err != nil {
-						return map[string]interface{}{}, errors.New("orMap2 error")
-					}
-				}
-				newMap["$or"] = append(newMap["$or"].([]map[string]interface{}), subItem)
 			}
-			return newMap, nil
+			if ok {
+				subItem, err = flatAndToOr(subItem)
+				if err != nil {
+					return map[string]interface{}{}, errors.New("orMap2 error")
+				}
+			}
+			newMap["$or"] = append(newMap["$or"].([]map[string]interface{}), subItem)
 		}
-		return map[string]interface{}{}, errors.New("orMap1 error")
+		return newMap, nil
 	}
 	return where, nil
 }
 
-// flaten json to sql
+// flaten map to sql
 func shuttle(key string, value interface{}) (string, error) {
 	if key == "" {
 		mapv, ok := value.(map[string]interface{})
@@ -190,4 +198,16 @@ func shuttle(key string, value interface{}) (string, error) {
 		return direct2Sql(columnNamer(key), "=", value), nil
 	}
 	return "", errors.New("shuttle6 error")
+}
+
+func map2sql(value map[string]interface{}) (string, error) {
+	flatCond, err := flatAndToOr(value)
+	if err != nil {
+		return "", err
+	}
+	sql, err := shuttle("", flatCond)
+	if err != nil {
+		return "", err
+	}
+	return sql, nil
 }
