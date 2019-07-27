@@ -2,12 +2,10 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-package redis
+package redisext
 
 import (
-	"time"
-
-	"github.com/2637309949/bulrush"
+	addition "github.com/2637309949/bulrush-addition"
 	"github.com/go-redis/redis"
 )
 
@@ -17,61 +15,25 @@ type Redis struct {
 	API    *API
 }
 
-type conf struct {
-	Network            string        `json:"network" yaml:"network"`
-	Addr               string        `json:"addrs" yaml:"addrs"`
-	Password           string        `json:"password" yaml:"password"`
-	DB                 int           `json:"db" yaml:"db"`
-	MaxRetries         int           `json:"maxRetries" yaml:"maxRetries"`
-	MinRetryBackoff    time.Duration `json:"minRetryBackoff" yaml:"minRetryBackoff"`
-	MaxRetryBackoff    time.Duration `json:"maxRetryBackoff" yaml:"maxRetryBackoff"`
-	DialTimeout        time.Duration `json:"dialTimeout" yaml:"dialTimeout"`
-	ReadTimeout        time.Duration `json:"readTimeout" yaml:"readTimeout"`
-	WriteTimeout       time.Duration `json:"writeTimeout" yaml:"writeTimeout"`
-	PoolSize           int           `json:"poolSize" yaml:"poolSize"`
-	MinIdleConns       int           `json:"minIdleConns" yaml:"minIdleConns"`
-	MaxConnAge         time.Duration `json:"maxConnAge" yaml:"maxConnAge"`
-	PoolTimeout        time.Duration `json:"poolTimeout" yaml:"poolTimeout"`
-	IdleTimeout        time.Duration `json:"idleTimeout" yaml:"idleTimeout"`
-	IdleCheckFrequency time.Duration `json:"idleCheckFrequency" yaml:"idleCheckFrequency"`
-}
-
 // New new redis instance
-func New(bulCfg *bulrush.Config) *Redis {
-	conf := &conf{}
-	if err := bulCfg.Unmarshal("redis", conf); err != nil {
+func New() *Redis {
+	return &Redis{API: &API{}}
+}
+
+// Init redis
+func (r *Redis) Init(init func(*Redis)) *Redis {
+	init(r)
+	return r
+}
+
+// Conf set e conf
+func (r *Redis) Conf(opts *redis.Options) *Redis {
+	client := redis.NewClient(opts)
+	if _, err := client.Ping().Result(); err != nil {
 		panic(err)
 	}
-	client := createClient(conf)
-	api := &API{
-		Client: client,
-	}
-	return &Redis{
-		Client: client,
-		API:    api,
-	}
-}
-
-// dialInfo with default params
-func dialInfo(conf *conf) *redis.Options {
-	options := &redis.Options{}
-	options.Addr = conf.Addr
-	options.Password = conf.Password
-	options.DB = conf.DB
-	return options
-}
-
-// ping client
-func ping(c *redis.Client) {
-	if _, err := c.Ping().Result(); err != nil {
-		panic(err)
-	}
-}
-
-// createClient obtain a redis connecting
-func createClient(conf *conf) *redis.Client {
-	options := dialInfo(conf)
-	client := redis.NewClient(options)
-	ping(client)
-	return client
+	addition.RushLogger.Info("redis:Connection has been established successfully, URL:%v", opts.Addr)
+	r.Client = client
+	r.API.Client = client
+	return r
 }
