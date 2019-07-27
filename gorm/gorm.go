@@ -115,11 +115,8 @@ func (e *GORM) Model(name string) *gorm.DB {
 
 // Conf set e conf
 func (e *GORM) Conf(conf *Config) *GORM {
-	var (
-		db  *gorm.DB
-		err error
-	)
-	if db, err = gorm.Open(conf.DBType, conf.URL); err != nil {
+	db, err := gorm.Open(conf.DBType, conf.URL)
+	if err != nil {
 		panic(err)
 	}
 	if err = db.DB().Ping(); err != nil {

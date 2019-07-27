@@ -109,17 +109,13 @@ func (e *Mongo) Model(name string) *mgo.Collection {
 
 // Conf defined conf
 func (e *Mongo) Conf(conf *mgo.DialInfo) *Mongo {
-	var (
-		session *mgo.Session
-		err     error
-	)
-	fmt.Println(*conf)
-	if session, err = mgo.DialWithInfo(conf); err != nil {
+	session, err := mgo.DialWithInfo(conf)
+	if err != nil {
 		panic(err)
 	}
-	addition.RushLogger.Info("mongo:Connection has been established successfully, URL:%v", conf.Addrs)
 	e.c = conf
 	e.Session = session
+	addition.RushLogger.Info("mongo:Connection has been established successfully, URL:%v", conf.Addrs)
 	return e
 }
 
