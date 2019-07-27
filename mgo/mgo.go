@@ -113,6 +113,7 @@ func (e *Mongo) Conf(conf *mgo.DialInfo) *Mongo {
 		session *mgo.Session
 		err     error
 	)
+	fmt.Println(*conf)
 	if session, err = mgo.DialWithInfo(conf); err != nil {
 		panic(err)
 	}
