@@ -6,6 +6,7 @@ package gormext
 
 import (
 	"encoding/json"
+	"errors"
 	"math"
 	"net/http"
 	"reflect"
@@ -169,17 +170,55 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 }
 
 func create(name string, c *gin.Context, ext *GORM, opts *Opts) {
-	var form form
-	list := ext.Vars(name)
-	if err := c.ShouldBindJSON(&form); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": "Internal Server Error",
-			"stack":   err.Error(),
-		})
-		return
-	}
-	form = opts.RouteHooks.Create.Form(form)
-	docsByte, err := json.Marshal(form.Docs)
+	ret, err := utils.Chain(func(ret interface{}) (interface{}, error) {
+		// valid docs
+		var form form
+		list := ext.Vars(name)
+		if err := c.ShouldBindJSON(&form); err != nil {
+			addition.RushLogger.Error(err.Error())
+			return nil, err
+		}
+		form = opts.RouteHooks.Create.Form(form)
+		docsByte, err := json.Marshal(form.Docs)
+		if err != nil {
+			addition.RushLogger.Error(err.Error())
+			return nil, err
+		}
+		if err := json.Unmarshal(docsByte, list); err != nil {
+			addition.RushLogger.Error(err.Error())
+			return nil, err
+		}
+		return list, nil
+	}, func(list interface{}) (interface{}, error) {
+		// save docs
+		validate := validator.New()
+		listValue := reflect.ValueOf(list).Elem()
+		count := listValue.Len()
+		tx := ext.DB.Begin()
+		// Business and security considerations
+		// 	Only save reference if exists, no create ref and no update ref
+		tx = tx.Set("gorm:association_autoupdate", false).Set("gorm:association_autocreate", false)
+		for index := 0; index < count; index++ {
+			item := listValue.Index(index).Interface()
+			if err := validate.Struct(item); err != nil {
+				tx.Rollback()
+				addition.RushLogger.Error(err.Error())
+				return nil, err
+			}
+			newValue := reflect.New(reflect.TypeOf(item))
+			newValue.Elem().Set(reflect.ValueOf(item))
+			if err := tx.Create(newValue.Interface()).Error; err != nil {
+				tx.Rollback()
+				addition.RushLogger.Error(err.Error())
+				return nil, err
+			}
+		}
+		if err := tx.Commit().Error; err != nil {
+			addition.RushLogger.Error(err.Error())
+			return nil, err
+		}
+		return "ok", nil
+	})
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal Server Error",
@@ -187,48 +226,8 @@ func create(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		})
 		return
 	}
-	if err := json.Unmarshal(docsByte, list); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": "Internal Server Error",
-			"stack":   err.Error(),
-		})
-		return
-	}
-	validate := validator.New()
-	listValue := reflect.ValueOf(list).Elem()
-	count := listValue.Len()
-	tx := ext.DB.Begin()
-	for index := 0; index < count; index++ {
-		item := listValue.Index(index).Interface()
-		if err := validate.Struct(item); err != nil {
-			tx.Rollback()
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"message": "Internal Server Error",
-				"stack":   err.Error(),
-			})
-			return
-		}
-		newValue := reflect.New(reflect.TypeOf(item))
-		newValue.Elem().Set(reflect.ValueOf(item))
-		if err := tx.Create(newValue.Interface()).Error; err != nil {
-			tx.Rollback()
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"message": "Internal Server Error",
-				"stack":   err.Error(),
-			})
-			return
-		}
-
-	}
-	if err = tx.Commit().Error; err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": "Internal Server Error",
-			"stack":   err.Error(),
-		})
-		return
-	}
 	c.JSON(http.StatusOK, gin.H{
-		"message": "ok",
+		"message": ret,
 	})
 }
 
@@ -244,7 +243,10 @@ func remove(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		return
 	}
 	form = opts.RouteHooks.Delete.Form(form)
+	// Business and security considerations
+	// 	Only save reference if exists, no create ref and no update ref
 	tx := ext.DB.Begin()
+	tx = tx.Set("gorm:association_autoupdate", false).Set("gorm:association_autocreate", false)
 	for _, item := range form.Docs {
 		id, ok := item["ID"]
 		if !ok {
@@ -285,46 +287,51 @@ func remove(name string, c *gin.Context, ext *GORM, opts *Opts) {
 }
 
 func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
-	var form form
-	q := NewQuery()
-	if err := c.ShouldBindJSON(&form); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": "Internal Server Error",
-			"stack":   err.Error(),
-		})
-		return
-	}
-	form = opts.RouteHooks.Create.Form(form)
-	tx := ext.DB.Begin()
-	for _, doc := range form.Docs {
-		one := ext.Var(name)
-		id, ok := doc["ID"]
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"message": "Internal Server Error",
-				"stack":   "no id found",
-			})
-			return
+	ret, err := utils.Chain(func(ret interface{}) (interface{}, error) {
+		var form form
+		if err := c.ShouldBindJSON(&form); err != nil {
+			addition.RushLogger.Error(err.Error())
+			return nil, err
 		}
-		toColumnName(&doc)
-		q.Cond = opts.RouteHooks.Update.Cond(map[string]interface{}{"ID": id}, c, struct{ Name string }{Name: name})
-		if err := q.Build(q.Cond); err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"message": "Internal Server Error",
-				"stack":   err.Error(),
-			})
-			return
+		form = opts.RouteHooks.Create.Form(form)
+		return &form, nil
+	}, func(ret interface{}) (interface{}, error) {
+		form := ret.(*form)
+		q := NewQuery()
+		// Business and security considerations
+		// 	Only save reference if exists, no create ref and no update ref
+		tx := ext.DB.Begin()
+		tx = tx.Set("gorm:association_autoupdate", false).Set("gorm:association_autocreate", false)
+		for _, doc := range form.Docs {
+			one := ext.Var(name)
+			id, ok := doc["ID"]
+			if !ok {
+				addition.RushLogger.Error("no id found")
+				return nil, errors.New("no id found")
+			}
+			jsonByte, err := json.Marshal(doc)
+			if err != nil {
+				addition.RushLogger.Error(err.Error())
+				return nil, err
+			}
+			if err := json.Unmarshal(jsonByte, one); err != nil {
+				addition.RushLogger.Error(err.Error())
+				return nil, err
+			}
+			q.Cond = opts.RouteHooks.Update.Cond(map[string]interface{}{"ID": id}, c, struct{ Name string }{Name: name})
+			if err := q.Build(q.Cond); err != nil {
+				addition.RushLogger.Error(err.Error())
+				return nil, err
+			}
+			if err := tx.Model(one).Where(q.SQL).Update(one).Error; err != nil {
+				tx.Rollback()
+				addition.RushLogger.Error(err.Error())
+				return nil, err
+			}
 		}
-		if err := tx.Model(one).Where(q.SQL).Updates(doc).Error; err != nil {
-			tx.Rollback()
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"message": "Internal Server Error",
-				"stack":   err.Error(),
-			})
-			return
-		}
-	}
-	err := tx.Commit().Error
+		err := tx.Commit().Error
+		return "ok", err
+	})
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal Server Error",
@@ -333,6 +340,6 @@ func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"message": "ok",
+		"message": ret,
 	})
 }
