@@ -106,19 +106,19 @@ func MagentaBold(message string) string {
 func toLevelString(level LEVEL) string {
 	switch level {
 	case ERROR:
-		return "ERROR"
+		return "[BUL-error]"
 	case WARN:
-		return "WARN"
+		return "[BUL-warn]"
 	case INFO:
-		return "INFO"
+		return "[BUL-info]"
 	case VERBOSE:
-		return "VERBOSE"
+		return "[BUL-verbose]"
 	case DEBUG:
-		return "DEBUG"
+		return "[BUL-debug]"
 	case SILLY:
-		return "SILLY"
+		return "[BUL-silly]"
 	case HTTP:
-		return "HTTP"
+		return "[BUL-http]"
 	}
 	return string(level)
 }
