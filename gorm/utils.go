@@ -106,3 +106,40 @@ func toArrayInterface(value interface{}) []interface{} {
 		return item
 	}).([]interface{})
 }
+
+func isNumber(value interface{}) bool {
+	if value == nil {
+		return false
+	}
+	kind := reflect.TypeOf(value).Kind()
+	return kind == reflect.Int ||
+		kind == reflect.Int8 ||
+		kind == reflect.Int16 ||
+		kind == reflect.Int64 ||
+		kind == reflect.Uint ||
+		kind == reflect.Uint8 ||
+		kind == reflect.Uint16 ||
+		kind == reflect.Uint32 ||
+		kind == reflect.Uint64 ||
+		kind == reflect.Uintptr ||
+		kind == reflect.Float32 ||
+		kind == reflect.Float64
+}
+
+func isNull(value interface{}) bool {
+	return value == nil
+}
+
+func isString(value interface{}) bool {
+	if value == nil {
+		return false
+	}
+	return reflect.TypeOf(value).Kind() == reflect.String
+}
+
+func isSlice(value interface{}) bool {
+	if value == nil {
+		return false
+	}
+	return reflect.TypeOf(value).Kind() == reflect.Slice
+}

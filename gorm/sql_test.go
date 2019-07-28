@@ -6,6 +6,7 @@ package gormext
 
 import "testing"
 
+// /usr/local/go/bin/go test -timeout 30s github.com/2637309949/bulrush-addition/gorm -run "^(Test_map2sql)$" -v
 func Test_map2sql(t *testing.T) {
 	type args struct {
 		value map[string]interface{}
@@ -27,7 +28,9 @@ func Test_map2sql(t *testing.T) {
 				value map[string]interface{}
 			}{
 				value: map[string]interface{}{
-					"Age": map[string]interface{}{"$gte": 30},
+					"Age":      map[string]interface{}{"$gte": 30},
+					"isLeader": true,
+					"Sex":      nil,
 					"$or": []map[string]interface{}{
 						map[string]interface{}{"Weight": map[string]interface{}{"$lte": 200}},
 						map[string]interface{}{

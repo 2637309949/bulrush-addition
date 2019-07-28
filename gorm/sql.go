@@ -13,11 +13,15 @@ import (
 	"github.com/thoas/go-funk"
 )
 
+func formatNull(key string, instruct string, value interface{}) string {
+	return fmt.Sprintf("%s %s null", key, instruct)
+}
+
 func formatString(key string, instruct string, value interface{}) string {
 	return fmt.Sprintf("%s %s '%v'", key, instruct, value)
 }
 
-func formatFloat64(key string, instruct string, value interface{}) string {
+func formatNumber(key string, instruct string, value interface{}) string {
 	return fmt.Sprintf("%s %s %v", key, instruct, value)
 }
 
@@ -33,9 +37,13 @@ func formatArray(key string, instruct string, value interface{}) string {
 
 // check whether is least or not
 func isLeastDirect(key string, value interface{}) bool {
+	// Security filtering for key
+	if strings.Contains(key, " ") {
+		return false
+	}
+	// isLeastDirect
 	if !strings.HasPrefix(key, "$") {
-		toMap, ok := value.(map[string]interface{})
-		if ok {
+		if toMap, ok := value.(map[string]interface{}); ok {
 			for key := range toMap {
 				if !strings.HasPrefix(key, "$") {
 					return false
@@ -49,29 +57,18 @@ func isLeastDirect(key string, value interface{}) bool {
 
 // sql direct to sql string
 func direct2Sql(key string, instruct string, value interface{}) string {
-	if reflect.TypeOf(value).Kind() == reflect.String {
+	switch true {
+	case isNull(value):
+		return formatNull(key, instruct, value)
+	case isNumber(value):
+		return formatNumber(key, instruct, value)
+	case isString(value):
 		return formatString(key, instruct, value)
-	}
-	if reflect.TypeOf(value).Kind() == reflect.Int ||
-		reflect.TypeOf(value).Kind() == reflect.Int8 ||
-		reflect.TypeOf(value).Kind() == reflect.Int16 ||
-		reflect.TypeOf(value).Kind() == reflect.Int64 ||
-		reflect.TypeOf(value).Kind() == reflect.Uint ||
-		reflect.TypeOf(value).Kind() == reflect.Uint8 ||
-		reflect.TypeOf(value).Kind() == reflect.Uint16 ||
-		reflect.TypeOf(value).Kind() == reflect.Uint32 ||
-		reflect.TypeOf(value).Kind() == reflect.Uint64 ||
-		reflect.TypeOf(value).Kind() == reflect.Uintptr ||
-		reflect.TypeOf(value).Kind() == reflect.Float32 ||
-		reflect.TypeOf(value).Kind() == reflect.Float64 {
-		return formatFloat64(key, instruct, value)
-	}
-	if reflect.TypeOf(value).Kind() == reflect.Slice {
+	case isSlice(value):
 		return formatArray(key, instruct, value)
 	}
-	vmap, ok := value.(map[string]interface{})
 	andJoin := []string{}
-	if ok {
+	if vmap, ok := value.(map[string]interface{}); ok {
 		for k, v := range vmap {
 			if k == "$eq" {
 				subItem := direct2Sql(key, "=", v)
@@ -126,9 +123,8 @@ func direct2Sql(key string, instruct string, value interface{}) string {
 
 // flaten $or direct to $and
 func flatAndToOr(where map[string]interface{}) (map[string]interface{}, error) {
-	or, ok := where["$or"]
 	var err error
-	if ok && reflect.Slice == reflect.TypeOf(or).Kind() {
+	if or, ok := where["$or"]; ok && reflect.Slice == reflect.TypeOf(or).Kind() {
 		newMap := map[string]interface{}{}
 		newMap["$or"] = []map[string]interface{}{}
 		orArr := toArrayInterface(or)
@@ -156,9 +152,8 @@ func flatAndToOr(where map[string]interface{}) (map[string]interface{}, error) {
 // flaten map to sql
 func shuttle(key string, value interface{}) (string, error) {
 	if key == "" {
-		mapv, ok := value.(map[string]interface{})
 		andJoin := []string{}
-		if ok {
+		if mapv, ok := value.(map[string]interface{}); ok {
 			for k, v := range mapv {
 				sub, err := shuttle(k, v)
 				if err != nil {
@@ -175,9 +170,8 @@ func shuttle(key string, value interface{}) (string, error) {
 		return "", errors.New("shuttle1 error")
 	}
 	if key == "$or" {
-		vArr, ok := value.([]map[string]interface{})
 		orJoin := []string{}
-		if ok {
+		if vArr, ok := value.([]map[string]interface{}); ok {
 			for _, v := range vArr {
 				sub, err := shuttle("", v)
 				if err != nil {
@@ -193,19 +187,18 @@ func shuttle(key string, value interface{}) (string, error) {
 		}
 		return "", errors.New("shuttle3 error")
 	}
-	isDirect := isLeastDirect(key, value)
-	if isDirect {
+	if isLeastDirect(key, value) {
 		return direct2Sql(columnNamer(key), "=", value), nil
 	}
 	return "", errors.New("shuttle6 error")
 }
 
 func map2sql(value map[string]interface{}) (string, error) {
-	flatCond, err := flatAndToOr(value)
+	flat, err := flatAndToOr(value)
 	if err != nil {
 		return "", err
 	}
-	sql, err := shuttle("", flatCond)
+	sql, err := shuttle("", flat)
 	if err != nil {
 		return "", err
 	}
