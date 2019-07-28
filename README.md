@@ -338,12 +338,12 @@ addition.GORMExt.API.List(r, "User").Post(func(c *gin.Context) {
 var Logger = addition.RushLogger.
 	AppendTransports(
 		&logger.Transport{
-			Dirname: path.Join(path.Join(".", utils.Some(conf.Cfg.Log.Path, "logs").(string)), "error"),
+			Dirname: path.Join(path.Join(".", conf.Cfg.Log.Path), "error"),
 			Level:   logger.ERROR,
 			Maxsize: logger.Maxsize,
 		},
 		&logger.Transport{
-			Dirname: path.Join(path.Join(".", utils.Some(conf.Cfg.Log.Path, "logs").(string)), "combined"),
+			Dirname: path.Join(path.Join(".", conf.Cfg.Log.Path), "combined"),
 			Level:   logger.SILLY,
 			Maxsize: logger.Maxsize,
 		},
