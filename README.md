@@ -20,6 +20,7 @@
             - [Global](#global-1)
             - [Profile](#profile-1)
             - [Code](#code-1)
+        - [SQL translation](#sql-translation)
     - [Logger](#logger)
         - [Add Transport](#add-transport)
     - [Redis](#redis)
@@ -314,6 +315,21 @@ addition.GORMExt.API.List(r, "User").Post(func(c *gin.Context) {
 	},
 })
 ```
+
+#### SQL translation
+
+| 指令 | 是否安全 | Example | SQL |
+| ------ | ------ | ------ | ------ |
+| $eq | 是 |  { "$or": [ { "ID": 117 }, { "Name": "测试2" } ] } | ((((id = 117 and deleted_at is  null) or (name = '测试2' and deleted_at is  null)))) |
+| $ne | 是 |  { "$or": [ { "ID": 117 }, { "Name": "测试2" } ] } | ((((id = 117 and deleted_at is  null) or (name = '测试2' and deleted_at is  null)))) |
+| $gte | 是 |  { "$or": [ { "ID": 117 }, { "Name": "测试2" } ] } | ((((id = 117 and deleted_at is  null) or (name = '测试2' and deleted_at is  null)))) |
+| $gt | 是 |  { "$or": [ { "ID": 117 }, { "Name": "测试2" } ] } | ((((id = 117 and deleted_at is  null) or (name = '测试2' and deleted_at is  null)))) |
+| $lte | 是 |  { "$or": [ { "ID": 117 }, { "Name": "测试2" } ] } | ((((id = 117 and deleted_at is  null) or (name = '测试2' and deleted_at is  null)))) |
+| $in | 是 |  { "$or": [ { "ID": 117 }, { "Name": "测试2" } ] } | ((((id = 117 and deleted_at is  null) or (name = '测试2' and deleted_at is  null)))) |
+| $regex | 是 |  { "$or": [ { "ID": 117 }, { "Name": "测试2" } ] } | ((((id = 117 and deleted_at is  null) or (name = '测试2' and deleted_at is  null)))) |
+| $like | 是 |  { "$or": [ { "ID": 117 }, { "Name": "测试2" } ] } | ((((id = 117 and deleted_at is  null) or (name = '测试2' and deleted_at is  null)))) |
+| $exists | 是 |  { "$or": [ { "ID": 117 }, { "Name": "测试2" } ] } | ((((id = 117 and deleted_at is  null) or (name = '测试2' and deleted_at is  null)))) |
+
 
 ### Logger
 
