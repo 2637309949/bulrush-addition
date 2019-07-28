@@ -46,7 +46,7 @@ func one(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		})
 		return
 	}
-	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}, "ID": map[string]interface{}{"$oid": id}}, c, struct{ Name string }{Name: name})
+	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"DeletedAt": map[string]interface{}{"$eq": nil}, "ID": map[string]interface{}{"$oid": id}}, c, struct{ Name string }{Name: name})
 
 	if err := q.Build(q.Cond); err != nil {
 		addition.RushLogger.Error(err.Error())
@@ -81,7 +81,7 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		})
 		return
 	}
-	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"Deleted": map[string]interface{}{"$eq": nil}}, c, struct{ Name string }{Name: name})
+	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"DeletedAt": map[string]interface{}{"$eq": nil}}, c, struct{ Name string }{Name: name})
 
 	if err := q.Build(q.Cond); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -90,6 +90,7 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 		})
 		return
 	}
+
 	if err := Model.Pipe(q.Pipe).All(list); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Internal Server Error",

@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strings"
 
+	addition "github.com/2637309949/bulrush-addition"
 	"github.com/globalsign/mgo/bson"
 )
 
@@ -28,7 +29,7 @@ type Query struct {
 	name     string
 	model    interface{}
 	Cond     map[string]interface{}
-	Pipe     []map[string]interface{}
+	Pipe     []M
 	Project  map[string]interface{}
 	UProject map[string]interface{}
 	Preload  string
@@ -73,7 +74,7 @@ func NewQuery() *Query {
 		Order: map[string]interface{}{
 			"_created": -1,
 		},
-		Pipe: []map[string]interface{}{},
+		Pipe: []M{},
 	}
 }
 
@@ -168,41 +169,41 @@ func (q *Query) BuildCond(cond map[string]interface{}) error {
 		return err
 	}
 	q.Cond = replaceOid(q.Cond).(map[string]interface{})
-	q.Cond = replaceKey(q.model, q.Cond, "").(map[string]interface{})
 	return nil
 }
 
 // BuildPipe defined pipe array
 func (q *Query) BuildPipe() error {
-	q.Pipe = append(q.Pipe, map[string]interface{}{
-		"$match": q.Cond,
+	var cond map[string]interface{}
+	if err := addition.CopyMap(q.Cond, &cond); err != nil {
+		return err
+	}
+	q.Pipe = append(q.Pipe, M{
+		"$match": replaceKey(q.model, cond, ""),
 	})
-	related := q.BuildRelated()
-	if related != nil {
+	if related := q.BuildRelated(); related != nil {
 		q.Pipe = append(q.Pipe, related...)
 	}
-	q.BuildOrder()
-	if len(q.Order) > 0 {
-		q.Pipe = append(q.Pipe, map[string]interface{}{
+	if q.BuildOrder(); len(q.Order) > 0 {
+		q.Pipe = append(q.Pipe, M{
 			"$sort": q.Order,
 		})
 	}
-	q.BuildProject()
-	if len(q.Project) > 0 {
-		q.Pipe = append(q.Pipe, map[string]interface{}{
+	if q.BuildProject(); len(q.Project) > 0 {
+		q.Pipe = append(q.Pipe, M{
 			"$project": q.Project,
 		})
 	}
 	q.BuildUProject()
 	if len(q.UProject) > 0 {
-		q.Pipe = append(q.Pipe, map[string]interface{}{
+		q.Pipe = append(q.Pipe, M{
 			"$project": q.UProject,
 		})
 	}
-	q.Pipe = append(q.Pipe, map[string]interface{}{
+	q.Pipe = append(q.Pipe, M{
 		"$skip": (q.Page - 1) * q.Size,
 	})
-	q.Pipe = append(q.Pipe, map[string]interface{}{
+	q.Pipe = append(q.Pipe, M{
 		"$limit": q.Size,
 	})
 	return nil
@@ -224,10 +225,13 @@ func (q *Query) BuildOrder() {
 	}
 }
 
+// M defined alia map[string]interface{}
+type M map[string]interface{}
+
 // BuildRelated defined related sql for preLoad
-func (q *Query) BuildRelated() []map[string]interface{} {
+func (q *Query) BuildRelated() []M {
 	if q.Query.Preload != "" {
-		relatedArr := []map[string]interface{}{}
+		relatedArr := []M{}
 		related := strings.Split(q.Query.Preload, ",")
 		for _, item := range related {
 			preInfo := preloadInfo(q.model, item)
@@ -236,61 +240,61 @@ func (q *Query) BuildRelated() []map[string]interface{} {
 					q.Query.UProject = strings.Join([]string{q.Query.UProject, preInfo.Up}, ",")
 				}
 				if !preInfo.IsArray {
-					relatedArr = append(relatedArr, []map[string]interface{}{
-						map[string]interface{}{
-							"$lookup": map[string]interface{}{
+					relatedArr = append(relatedArr, []M{
+						M{
+							"$lookup": M{
 								"from":         preInfo.Coll,
 								"localField":   preInfo.Local,
 								"foreignField": preInfo.Foreign,
 								"as":           preInfo.BsonName,
 							},
 						},
-						map[string]interface{}{
-							"$unwind": map[string]interface{}{
+						M{
+							"$unwind": M{
 								"path":                       "$" + preInfo.BsonName,
 								"preserveNullAndEmptyArrays": true,
 							},
 						},
 					}...)
 				} else {
-					group := map[string]interface{}{"_id": "$_id", "root": map[string]interface{}{"$first": "$$ROOT"}}
-					group[preInfo.BsonName] = map[string]interface{}{"$push": "$" + preInfo.BsonName}
-					addFields := map[string]interface{}{}
+					group := M{"_id": "$_id", "root": M{"$first": "$$ROOT"}}
+					group[preInfo.BsonName] = M{"$push": "$" + preInfo.BsonName}
+					addFields := M{}
 					addFields["root."+preInfo.BsonName] = "$" + preInfo.BsonName
-					unwindLocal := map[string]interface{}{
+					unwindLocal := M{
 						"path":                       "$" + preInfo.Local,
 						"preserveNullAndEmptyArrays": true,
 					}
-					lookup := map[string]interface{}{
+					lookup := M{
 						"from":         preInfo.Coll,
 						"localField":   preInfo.Local,
 						"foreignField": preInfo.Foreign,
 						"as":           preInfo.BsonName,
 					}
-					unwind := map[string]interface{}{
+					unwind := M{
 						"path":                       "$" + preInfo.BsonName,
 						"preserveNullAndEmptyArrays": true,
 					}
-					replaceRoot := map[string]interface{}{
+					replaceRoot := M{
 						"newRoot": "$root",
 					}
-					relatedArr = append(relatedArr, []map[string]interface{}{
-						map[string]interface{}{
+					relatedArr = append(relatedArr, []M{
+						M{
 							"$unwind": unwindLocal,
 						},
-						map[string]interface{}{
+						M{
 							"$lookup": lookup,
 						},
-						map[string]interface{}{
+						M{
 							"$unwind": unwind,
 						},
-						map[string]interface{}{
+						M{
 							"$group": group,
 						},
-						map[string]interface{}{
+						M{
 							"$addFields": addFields,
 						},
-						map[string]interface{}{
+						M{
 							"$replaceRoot": replaceRoot,
 						},
 					}...)
