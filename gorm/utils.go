@@ -50,7 +50,7 @@ func columnNamer(name string) string {
 		lower = false
 		upper = true
 	)
-	if v := smap.Get(name); v != "" {
+	if v := smap.Get(name).(string); v != "" {
 		return v
 	}
 	if name == "" {
