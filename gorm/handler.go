@@ -192,6 +192,7 @@ func create(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		return list, nil
 	}, func(list interface{}) (interface{}, error) {
 		// save docs
+		rowsAffected := make([]int64, 0)
 		validate := validator.New()
 		listValue := reflect.ValueOf(list).Elem()
 		count := listValue.Len()
@@ -208,17 +209,19 @@ func create(name string, c *gin.Context, ext *GORM, opts *Opts) {
 			}
 			newValue := reflect.New(reflect.TypeOf(item))
 			newValue.Elem().Set(reflect.ValueOf(item))
-			if err := tx.Create(newValue.Interface()).Error; err != nil {
+			ret := tx.Create(newValue.Interface())
+			if err := ret.Error; err != nil {
 				tx.Rollback()
 				addition.RushLogger.Error(err.Error())
 				return nil, err
 			}
+			rowsAffected = append(rowsAffected, ret.RowsAffected)
 		}
 		if err := tx.Commit().Error; err != nil {
 			addition.RushLogger.Error(err.Error())
 			return nil, err
 		}
-		return "ok", nil
+		return rowsAffected, nil
 	})
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -227,14 +230,13 @@ func create(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"message": ret,
-	})
+	c.JSON(http.StatusOK, ret)
 }
 
 func remove(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	var form form
 	bind := ext.Var(name)
+	rowsAffected := make([]int64, 0)
 	q := NewQuery()
 	if err := c.ShouldBindJSON(&form); err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -265,7 +267,8 @@ func remove(name string, c *gin.Context, ext *GORM, opts *Opts) {
 			})
 			return
 		}
-		if err := tx.Model(bind).Where(q.SQL).Update(map[string]interface{}{"deleted_at": time.Now()}).Error; err != nil {
+		ret := tx.Model(bind).Where(q.SQL).Update(map[string]interface{}{"deleted_at": time.Now()})
+		if err := ret.Error; err != nil {
 			tx.Rollback()
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"message": "Internal Server Error",
@@ -273,6 +276,7 @@ func remove(name string, c *gin.Context, ext *GORM, opts *Opts) {
 			})
 			return
 		}
+		rowsAffected = append(rowsAffected, ret.RowsAffected)
 	}
 	err := tx.Commit().Error
 	if err != nil {
@@ -282,9 +286,7 @@ func remove(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"message": "ok",
-	})
+	c.JSON(http.StatusOK, rowsAffected)
 }
 
 func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
@@ -297,6 +299,7 @@ func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		form = opts.RouteHooks.Create.Form(form)
 		return &form, nil
 	}, func(ret interface{}) (interface{}, error) {
+		rowsAffected := make([]int64, 0)
 		form := ret.(*form)
 		q := NewQuery()
 		// Business and security considerations
@@ -324,14 +327,16 @@ func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
 				addition.RushLogger.Error(err.Error())
 				return nil, err
 			}
-			if err := tx.Model(one).Where(q.SQL).Update(one).Error; err != nil {
+			ret := tx.Model(one).Where(q.SQL).Update(one)
+			if err := ret.Error; err != nil {
 				tx.Rollback()
 				addition.RushLogger.Error(err.Error())
 				return nil, err
 			}
+			rowsAffected = append(rowsAffected, ret.RowsAffected)
 		}
 		err := tx.Commit().Error
-		return "ok", err
+		return rowsAffected, err
 	})
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -340,7 +345,5 @@ func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"message": ret,
-	})
+	c.JSON(http.StatusOK, ret)
 }
