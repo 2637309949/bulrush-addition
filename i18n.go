@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 
+	utils "github.com/2637309949/bulrush-utils"
 	"github.com/2637309949/bulrush-utils/funcs"
 	"github.com/gin-gonic/gin"
 	"github.com/kataras/go-events"
@@ -101,8 +102,8 @@ func (i18n *I18N) AddLocales(locales M) *I18N {
 }
 
 // I18NLocale defined I18NLocale func
-func (i18n *I18N) I18NLocale(locale string) string {
-	return i18n.locales[i18n.locale].(M)[locale].(string)
+func (i18n *I18N) I18NLocale(locale string, init string) string {
+	return utils.Some(i18n.locales[i18n.locale].(M)[locale], init).(string)
 }
 
 // BuildI18nKey defined BuildI18nKey func
