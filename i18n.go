@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/2637309949/bulrush-utils/funcs"
 	"github.com/gin-gonic/gin"
 	"github.com/kataras/go-events"
 )
@@ -29,6 +30,8 @@ type I18N struct {
 	initFunc  func()
 }
 
+const localeKey = "locale"
+
 // NewI18N defined NewI18N plugin
 func NewI18N() *I18N {
 	return &I18N{
@@ -46,7 +49,16 @@ func NewI18N() *I18N {
 			},
 		},
 		ctxLocale: func(c *gin.Context) string {
-			return c.Query("locale")
+			// Query > PostForm > Header > Cookie
+			return funcs.Until(
+				c.Query(localeKey),
+				c.PostForm(localeKey),
+				c.Request.Header.Get(localeKey),
+				func() interface{} {
+					value, _ := c.Cookie(localeKey)
+					return value
+				},
+			).(string)
 		},
 	}
 }
