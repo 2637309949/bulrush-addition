@@ -9,11 +9,11 @@ import (
 	"reflect"
 	"strings"
 
-	utils "github.com/2637309949/bulrush-utils"
+	"github.com/2637309949/bulrush-utils/maps"
 	"github.com/thoas/go-funk"
 )
 
-var smap = utils.NewSafeMap()
+var smap = maps.NewSafeMap()
 var commonInitialisms = []string{"API", "ASCII", "CPU", "CSS", "DNS", "EOF", "GUID", "HTML", "HTTP", "HTTPS", "ID", "IP", "JSON", "LHS", "QPS", "RAM", "RHS", "RPC", "SLA", "SMTP", "SSH", "TLS", "TTL", "UID", "UI", "UUID", "URI", "URL", "UTF8", "VM", "XML", "XSRF", "XSS"}
 var commonInitialismsReplacer = columnReplacer(commonInitialisms)
 

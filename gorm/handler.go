@@ -14,7 +14,8 @@ import (
 	"time"
 
 	addition "github.com/2637309949/bulrush-addition"
-	utils "github.com/2637309949/bulrush-utils"
+	"github.com/2637309949/bulrush-utils/funcs"
+	"github.com/2637309949/bulrush-utils/regex"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/thoas/go-funk"
@@ -27,8 +28,8 @@ type form struct {
 }
 
 func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
-	ret, err := utils.Chain(func(ret interface{}) (interface{}, error) {
-		key := utils.FindStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
+	ret, err := funcs.Chain(func(ret interface{}) (interface{}, error) {
+		key := regex.FindStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
 		id, err := strconv.Atoi(c.Param(key))
 		q := NewQuery()
 		if err != nil {
@@ -170,7 +171,7 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 }
 
 func create(name string, c *gin.Context, ext *GORM, opts *Opts) {
-	ret, err := utils.Chain(func(ret interface{}) (interface{}, error) {
+	ret, err := funcs.Chain(func(ret interface{}) (interface{}, error) {
 		// valid docs
 		var form form
 		list := ext.Vars(name)
@@ -287,7 +288,7 @@ func remove(name string, c *gin.Context, ext *GORM, opts *Opts) {
 }
 
 func update(name string, c *gin.Context, ext *GORM, opts *Opts) {
-	ret, err := utils.Chain(func(ret interface{}) (interface{}, error) {
+	ret, err := funcs.Chain(func(ret interface{}) (interface{}, error) {
 		var form form
 		if err := c.ShouldBindJSON(&form); err != nil {
 			addition.RushLogger.Error(err.Error())

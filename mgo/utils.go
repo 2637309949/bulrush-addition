@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"strings"
 
-	utils "github.com/2637309949/bulrush-utils"
+	"github.com/2637309949/bulrush-utils/regex"
 	"github.com/thoas/go-funk"
 )
 
@@ -43,8 +43,8 @@ func preloadInfo(target interface{}, preload string) *PreloadInfo {
 		return nil
 	}
 	bsonName := strings.Split(field.Tag.Get("bson"), ",")[0]
-	refStr := utils.FindStringSubmatch(`ref\((.*?)\)`, field.Tag.Get("br"))
-	upStr := utils.FindStringSubmatch(`up\((.*?)\)`, field.Tag.Get("br"))
+	refStr := regex.FindStringSubmatch(`ref\((.*?)\)`, field.Tag.Get("br"))
+	upStr := regex.FindStringSubmatch(`up\((.*?)\)`, field.Tag.Get("br"))
 	if len(refStr) > 0 {
 		refInfo := strings.Split(refStr[0], ",")
 		if len(refInfo) >= 2 {

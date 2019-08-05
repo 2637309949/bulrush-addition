@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"strings"
 
-	utils "github.com/2637309949/bulrush-utils"
+	"github.com/2637309949/bulrush-utils/regex"
 	"github.com/thoas/go-funk"
 )
 
@@ -70,8 +70,8 @@ func fieldScope(structType reflect.Type, items *[]FieldsParameter) {
 				fieldScope(fieldType, items)
 			} else {
 				optional := strings.Contains(field.Tag.Get("gorm"), "not null")
-				descArr := utils.FindStringSubmatch(`comment:'(.*?)'`, field.Tag.Get("gorm"))
-				enumArr := utils.FindStringSubmatch(`enum:'(.*?)'`, field.Tag.Get("gorm"))
+				descArr := regex.FindStringSubmatch(`comment:'(.*?)'`, field.Tag.Get("gorm"))
+				enumArr := regex.FindStringSubmatch(`enum:'(.*?)'`, field.Tag.Get("gorm"))
 				desc := ""
 				if len(descArr) > 0 {
 					desc = descArr[0]

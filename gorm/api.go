@@ -10,6 +10,7 @@ import (
 	"time"
 
 	utils "github.com/2637309949/bulrush-utils"
+	"github.com/2637309949/bulrush-utils/array"
 	"github.com/gin-gonic/gin"
 	"github.com/thoas/go-funk"
 )
@@ -681,7 +682,7 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 		newOpts.RouteHooks = hooks
 		opts.RouteHooks = opts.mergeOpts(newOpts).RouteHooks
 	}
-	r.GET(routePrefixs.One(name), utils.Append(func(c *gin.Context) {
+	r.GET(routePrefixs.One(name), array.Append(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
 			one(name, c, ai.gorm, opts)
 		}
@@ -696,7 +697,7 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 		}
 		h1.r(c)
 	}, handlers).([]gin.HandlerFunc)...)
-	r.GET(routePrefixs.List(name), utils.Append(func(c *gin.Context) {
+	r.GET(routePrefixs.List(name), array.Append(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
 			list(name, c, ai.gorm, opts)
 		}
@@ -711,7 +712,7 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 		}
 		h1.r(c)
 	}, handlers).([]gin.HandlerFunc)...)
-	r.POST(routePrefixs.Create(name), utils.Append(func(c *gin.Context) {
+	r.POST(routePrefixs.Create(name), array.Append(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
 			create(name, c, ai.gorm, opts)
 		}
@@ -726,7 +727,7 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 		}
 		h1.r(c)
 	}, handlers).([]gin.HandlerFunc)...)
-	r.PUT(routePrefixs.Update(name), utils.Append(func(c *gin.Context) {
+	r.PUT(routePrefixs.Update(name), array.Append(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
 			update(name, c, ai.gorm, opts)
 		}
@@ -741,7 +742,7 @@ func (ai *API) ALL(r *gin.RouterGroup, name string, handlers ...gin.HandlerFunc)
 		}
 		h1.r(c)
 	}, handlers).([]gin.HandlerFunc)...)
-	r.DELETE(routePrefixs.Delete(name), utils.Append(func(c *gin.Context) {
+	r.DELETE(routePrefixs.Delete(name), array.Append(func(c *gin.Context) {
 		handler := func(c *gin.Context) {
 			remove(name, c, ai.gorm, opts)
 		}
