@@ -13,18 +13,22 @@ import (
 	"github.com/thoas/go-funk"
 )
 
+// format null type
 func formatNull(key string, instruct string, value interface{}) string {
 	return fmt.Sprintf("%s %s null", key, instruct)
 }
 
+// format string type
 func formatString(key string, instruct string, value interface{}) string {
 	return fmt.Sprintf("%s %s '%v'", key, instruct, value)
 }
 
+// format number type
 func formatNumber(key string, instruct string, value interface{}) string {
 	return fmt.Sprintf("%s %s %v", key, instruct, value)
 }
 
+// format array type
 func formatArray(key string, instruct string, value interface{}) string {
 	items := funk.Map(value, func(item interface{}) string {
 		if reflect.TypeOf(item).Kind() == reflect.String {
