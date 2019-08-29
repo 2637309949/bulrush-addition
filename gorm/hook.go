@@ -24,8 +24,7 @@ type Hook struct {
 // FailureHandler handlerss
 var FailureHandler = func(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-		"message": "Internal Server Error",
-		"stack":   "Access Denied, you don't have permission",
+		"message": "Access Denied, you don't have permission",
 	})
 }
 
