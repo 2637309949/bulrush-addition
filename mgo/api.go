@@ -52,13 +52,10 @@ type (
 	}
 	// ListHook defined list hook opts
 	ListHook struct {
-		Pre       func(*gin.Context)
-		Post      func(*gin.Context)
-		Auth      func(*gin.Context) bool
-		AuthOwn   bool
-		OwnKey    string
-		AuthByOwn func(*Hook) func(string) *Hook
-		Cond      func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{}
+		Pre  func(*gin.Context)
+		Post func(*gin.Context)
+		Auth func(*gin.Context) bool
+		Cond func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{}
 	}
 	// CreateHook defined create hook opts
 	CreateHook struct {
@@ -142,19 +139,6 @@ func (list *ListHook) auth() func(c *gin.Context) bool {
 		}
 	}
 	return list.Auth
-}
-
-func (list *ListHook) authByOwn() func(*Hook) func(string) *Hook {
-	if list.AuthByOwn == nil {
-		return func(h *Hook) func(string) *Hook {
-			return func(ret string) *Hook {
-				list.OwnKey = ret
-				list.AuthOwn = true
-				return h
-			}
-		}
-	}
-	return list.AuthByOwn
 }
 
 func (list *ListHook) cond() func(map[string]interface{}, *gin.Context, struct{ Name string }) map[string]interface{} {
@@ -394,7 +378,6 @@ func (opts *Opts) withDefault() *Opts {
 
 	opts.RouteHooks.List = opts.RouteHooks.list()
 	opts.RouteHooks.List.Auth = opts.RouteHooks.List.auth()
-	opts.RouteHooks.List.AuthByOwn = opts.RouteHooks.List.authByOwn()
 	opts.RouteHooks.List.Post = opts.RouteHooks.List.post()
 	opts.RouteHooks.List.Cond = opts.RouteHooks.List.cond()
 	opts.RouteHooks.List.Pre = opts.RouteHooks.List.pre()
