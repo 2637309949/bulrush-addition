@@ -30,7 +30,7 @@ type (
 		Collection string
 		Name       string
 		Reflector  interface{}
-		BanHook    bool
+		AutoHook   bool
 		Opts       *Opts
 		docs       *[]Doc
 	}
@@ -48,7 +48,7 @@ func (e *Mongo) Docs() *[]Doc {
 // Plugin defined plugin for bulrush
 func (e *Mongo) Plugin(r *gin.RouterGroup) *Mongo {
 	funk.ForEach(e.m, func(item *Profile) {
-		if !item.BanHook {
+		if item.AutoHook {
 			e.API.ALL(r, item.Name)
 		}
 	})

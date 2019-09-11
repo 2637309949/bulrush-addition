@@ -62,7 +62,7 @@ var _ = addition.MGOExt.Register(&mgoext.Profile{
 	DB:        "test",
 	Name:      "user",
 	Reflector: &User{},
-	BanHook:   true,     // all hook never to added to router, should by hand
+	AutoHook:   true,     // all hook never to added to router, should by hand
 })
 
 // RegisterUser inject function
@@ -110,7 +110,7 @@ Init(func(ext *mgoext.Mongo) {
 var _ = addition.MGOExt.Register(&mgoext.Profile{
 	Name:      "User",
 	Reflector: &User{},
-	BanHook:   true,
+	AutoHook:   true,
 	Opts: &mgoext.Opts{
 		RouteHooks: &mgoext.RouteHooks{
 			List: &mgoext.ListHook{
@@ -183,7 +183,7 @@ var _ = addition.GORMExt.Register(&gormext.Profile{
 	DB:        "test",
 	Name:      "user",
 	Reflector: &User{},
-	BanHook:   true,
+	AutoHook:   true,
 })
 ```
 
@@ -285,7 +285,7 @@ Init(func(ext *gormext.GORM) {
 var _ = addition.GORMExt.Register(&gormext.Profile{
 	Name:      "User",
 	Reflector: &User{},
-	BanHook:   true,
+	AutoHook:   true,
 	Opts: &gormext.Opts{
 		RouteHooks: &gormext.RouteHooks{
 			List: &gormext.ListHook{

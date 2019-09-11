@@ -33,7 +33,7 @@ type (
 		DB        string
 		Name      string
 		Reflector interface{}
-		BanHook   bool
+		AutoHook  bool
 		Opts      *Opts
 		docs      *[]Doc
 	}
@@ -51,7 +51,7 @@ func (e *GORM) Docs() *[]Doc {
 // Plugin defined plugin for bulrush
 func (e *GORM) Plugin(r *gin.RouterGroup) *GORM {
 	funk.ForEach(e.m, func(item *Profile) {
-		if !item.BanHook {
+		if item.AutoHook {
 			e.API.ALL(r, item.Name)
 		}
 	})
