@@ -336,7 +336,7 @@ addition.GORMExt.API.List(r, "User").Post(func(c *gin.Context) {
 #### Add Transport
 ```
 var Logger = addition.RushLogger.
-	AppendTransports(
+	AddTransports(
 		&logger.Transport{
 			Dirname: path.Join(path.Join(".", conf.Cfg.Log.Path), "error"),
 			Level:   logger.ERROR,

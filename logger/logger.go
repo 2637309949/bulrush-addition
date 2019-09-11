@@ -300,8 +300,8 @@ func (j *Journal) fprintf(w *MutiWriter, format string, a ...interface{}) {
 	j.output(w, 3, fmt.Sprintf(format, a...))
 }
 
-// AppendTransports defined append transports
-func (j *Journal) AppendTransports(transports ...*Transport) *Journal {
+// AddTransports defined append transports
+func (j *Journal) AddTransports(transports ...*Transport) *Journal {
 	for _, transport := range transports {
 		if transport.Level == 0 {
 			transport.Level = INFO
