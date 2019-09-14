@@ -33,40 +33,42 @@ func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		id, err := strconv.Atoi(c.Param(key))
 		q := NewQuery()
 		if err != nil {
-			addition.RushLogger.Error(err.Error())
 			return nil, err
 		}
 		if err := c.BindQuery(&q.Query); err != nil {
-			addition.RushLogger.Error(err.Error())
 			return nil, err
 		}
 		q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"deletedAt": map[string]interface{}{"$exists": false}, "id": id}, c, struct{ Name string }{Name: name})
 		if err := q.Build(q.Cond); err != nil {
-			addition.RushLogger.Error(err.Error())
 			return nil, err
 		}
 		return q, nil
 	}, func(ret interface{}) (interface{}, error) {
 		one := ext.Var(name)
 		q := ret.(*Query)
-		err := ext.DB.Scopes(func(db *gorm.DB) *gorm.DB {
-			if q.Select != "" {
-				return db.Select(q.Select)
-			}
-			return db
-		}).Scopes(func(db *gorm.DB) *gorm.DB {
-			funk.ForEach(q.Preload, func(pre string) {
-				if pre != "" {
-					db = db.Preload(pre)
+		err := ext.DB.
+			Scopes(func(db *gorm.DB) *gorm.DB {
+				if q.Select != "" {
+					return db.Select(q.Select)
 				}
-			})
-			return db
-		}).Scopes(func(db *gorm.DB) *gorm.DB {
-			return db.Where(q.SQL)
-		}).First(one).Error
+				return db
+			}).
+			Scopes(func(db *gorm.DB) *gorm.DB {
+				funk.ForEach(q.Preload, func(pre string) {
+					if pre != "" {
+						db = db.Preload(pre)
+					}
+				})
+				return db
+			}).
+			Scopes(func(db *gorm.DB) *gorm.DB {
+				return db.Where(q.SQL)
+			}).
+			First(one).Error
 		return one, err
 	})
 	if err != nil {
+		addition.RushLogger.Error(err.Error())
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
@@ -76,98 +78,101 @@ func one(name string, c *gin.Context, ext *GORM, opts *Opts) {
 }
 
 func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
-	list := ext.Vars(name)
-	one := ext.Var(name)
-	totalrecords := 0
-	db := ext.DB
-	q := NewQuery()
-	if err := c.BindQuery(&q.Query); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
-		return
-	}
-	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"deletedAt": map[string]interface{}{"$exists": false}}, c, struct{ Name string }{Name: name})
+	ret, err := funcs.Chain(func(ret interface{}) (interface{}, error) {
+		q := NewQuery()
+		if err := c.BindQuery(&q.Query); err != nil {
+			return nil, err
+		}
+		q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"deletedAt": map[string]interface{}{"$exists": false}}, c, struct{ Name string }{Name: name})
+		if err := q.Build(q.Cond); err != nil {
+			return nil, err
+		}
+		return q, nil
+	}, func(ret interface{}) (interface{}, error) {
+		totalrecords := 0
+		one := ext.Var(name)
+		list := ext.Vars(name)
+		q := ret.(*Query)
+		db := ext.DB
+		db = db.
+			Scopes(func(db *gorm.DB) *gorm.DB {
+				if q.Range != "ALL" {
+					db = db.Offset((q.Page - 1) * q.Size).Limit(q.Size)
+				}
+				return db
+			}).
+			Scopes(func(db *gorm.DB) *gorm.DB {
+				if q.Select != "" {
+					db = db.Select(q.Select)
+				}
+				return db
+			}).
+			Scopes(func(db *gorm.DB) *gorm.DB {
+				if q.Order != "" {
+					db = db.Order(q.Order)
+				}
+				return db
+			}).
+			Scopes(func(db *gorm.DB) *gorm.DB {
+				funk.ForEach(q.Preload, func(pre string) {
+					if pre != "" {
+						db = db.Preload(pre)
+					}
+				})
+				return db
+			}).
+			Scopes(func(db *gorm.DB) *gorm.DB {
+				if q.SQL != "" {
+					db = db.Where(q.SQL)
+				}
+				return db
+			}).Find(list)
 
-	if err := q.Build(q.Cond); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
-		return
-	}
-
-	db = db.Scopes(func(db *gorm.DB) *gorm.DB {
-		if q.Range != "ALL" {
-			db = db.Offset((q.Page - 1) * q.Size).Limit(q.Size)
+		if db.Error != nil {
+			return nil, db.Error
 		}
-		return db
-	}).Scopes(func(db *gorm.DB) *gorm.DB {
-		if q.Select != "" {
-			db = db.Select(q.Select)
-		}
-		return db
-	}).Scopes(func(db *gorm.DB) *gorm.DB {
-		if q.Order != "" {
-			db = db.Order(q.Order)
-		}
-		return db
-	}).Scopes(func(db *gorm.DB) *gorm.DB {
-		funk.ForEach(q.Preload, func(pre string) {
-			if pre != "" {
-				db = db.Preload(pre)
+		if err := ext.DB.Model(one).Where(q.SQL).Count(&totalrecords).Error; err != nil {
+			if err != nil {
+				return nil, err
 			}
-		})
-		return db
-	}).Scopes(func(db *gorm.DB) *gorm.DB {
-		if q.SQL != "" {
-			db = db.Where(q.SQL)
 		}
-		return db
-	}).Find(list)
-	if err := db.Error; err != nil {
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"message": err.Error(),
-			})
-			return
+
+		if q.Range != "ALL" {
+			totalpages := math.Ceil(float64(totalrecords) / float64(q.Size))
+			return gin.H{
+				"page":         q.Query.Page,
+				"size":         q.Query.Size,
+				"totalpages":   totalpages,
+				"range":        q.Query.Range,
+				"totalrecords": totalrecords,
+				"cond":         q.Cond,
+				"select":       q.Query.Select,
+				"preload":      q.Query.Preload,
+				"list":         list,
+			}, nil
 		}
-	}
-	if err := ext.DB.Model(one).Where(q.SQL).Count(&totalrecords).Error; err != nil {
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"message": err.Error(),
-			})
-			return
-		}
-	}
-	if q.Range != "ALL" {
-		totalpages := math.Ceil(float64(totalrecords) / float64(q.Size))
-		c.JSON(http.StatusOK, gin.H{
-			"page":         q.Query.Page,
-			"size":         q.Query.Size,
-			"totalpages":   totalpages,
+		return gin.H{
 			"range":        q.Query.Range,
 			"totalrecords": totalrecords,
 			"cond":         q.Cond,
 			"select":       q.Query.Select,
 			"preload":      q.Query.Preload,
 			"list":         list,
+		}, nil
+	})
+	if err != nil {
+		addition.RushLogger.Error(err.Error())
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
 		})
-	} else {
-		c.JSON(http.StatusOK, gin.H{
-			"range":        q.Query.Range,
-			"totalrecords": totalrecords,
-			"cond":         q.Cond,
-			"select":       q.Query.Select,
-			"preload":      q.Query.Preload,
-			"list":         list,
-		})
+		return
 	}
+	c.JSON(http.StatusOK, ret)
+
 }
 
 func create(name string, c *gin.Context, ext *GORM, opts *Opts) {
 	ret, err := funcs.Chain(func(ret interface{}) (interface{}, error) {
-		// valid docs
 		var form form
 		list := ext.Vars(name)
 		if err := c.ShouldBindJSON(&form); err != nil {
