@@ -10,7 +10,6 @@ import (
 	"reflect"
 	"strings"
 
-	addition "github.com/2637309949/bulrush-addition"
 	"github.com/globalsign/mgo/bson"
 )
 
@@ -174,12 +173,12 @@ func (q *Query) BuildCond(cond map[string]interface{}) error {
 
 // BuildPipe defined pipe array
 func (q *Query) BuildPipe() error {
-	var cond map[string]interface{}
-	if err := addition.CopyMap(q.Cond, &cond); err != nil {
-		return err
-	}
+	// var cond map[string]interface{}
+	// if err := addition.CopyMap(q.Cond, &cond); err != nil {
+	// 	return err
+	// }
 	q.Pipe = append(q.Pipe, M{
-		"$match": replaceKey(q.model, cond, ""),
+		"$match": replaceKey(q.model, q.Cond, ""),
 	})
 	if related := q.BuildRelated(); related != nil {
 		q.Pipe = append(q.Pipe, related...)

@@ -6,12 +6,14 @@ package mgoext
 
 import (
 	"encoding/json"
+	"errors"
 	"math"
 	"net/http"
 	"reflect"
 	"time"
 
 	addition "github.com/2637309949/bulrush-addition"
+	"github.com/2637309949/bulrush-utils/funcs"
 	"github.com/2637309949/bulrush-utils/regex"
 	"github.com/thoas/go-funk"
 
@@ -25,94 +27,96 @@ type form struct {
 }
 
 func one(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
-	Model := mgo.Model(name)
-	one := mgo.Var(name)
-	key := regex.FindStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
-	id := c.Param(key)
-	if !bson.IsObjectIdHex(id) {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": "not a valid id",
-		})
-		return
-	}
-	q := NewQuery()
-	q.name = name
-	q.model = one
-	if err := c.BindQuery(&q.Query); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
-		return
-	}
-	q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"DeletedAt": map[string]interface{}{"$eq": nil}, "ID": map[string]interface{}{"$oid": id}}, c, struct{ Name string }{Name: name})
-
-	if err := q.Build(q.Cond); err != nil {
+	ret, err := funcs.Chain(func(ret interface{}) (interface{}, error) {
+		one := mgo.Var(name)
+		key := regex.FindStringSubmatch(":(.*)$", opts.RoutePrefixs.One(name))[0]
+		id := c.Param(key)
+		if !bson.IsObjectIdHex(id) {
+			return nil, errors.New("not a valid id")
+		}
+		q := NewQuery()
+		q.name = name
+		q.model = one
+		if err := c.BindQuery(&q.Query); err != nil {
+			return nil, errors.New("not a valid id")
+		}
+		q.Cond = opts.RouteHooks.One.Cond(map[string]interface{}{"DeletedAt": map[string]interface{}{"$eq": nil}, "ID": map[string]interface{}{"$oid": id}}, c, struct{ Name string }{Name: name})
+		return q, nil
+	}, func(ret interface{}) (interface{}, error) {
+		Model := mgo.Model(name)
+		one := mgo.Var(name)
+		q := ret.(*Query)
+		if err := q.Build(q.Cond); err != nil {
+			return nil, err
+		}
+		if err := Model.Pipe(q.Pipe).One(one); err != nil {
+			return nil, err
+		}
+		return one, nil
+	})
+	if err != nil {
 		addition.RushLogger.Error(err.Error())
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
 		return
 	}
-	if err := Model.Pipe(q.Pipe).One(one); err != nil {
-		addition.RushLogger.Error(err.Error())
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, one)
+	c.JSON(http.StatusOK, ret)
 }
 
 func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
-	Model := mgo.Model(name)
-	one := mgo.Var(name)
-	list := mgo.Vars(name)
-	q := NewQuery()
-	q.name = name
-	q.model = one
-	if err := c.ShouldBindQuery(&q.Query); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
-		return
-	}
-	q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"DeletedAt": map[string]interface{}{"$eq": nil}}, c, struct{ Name string }{Name: name})
+	ret, err := funcs.Chain(func(ret interface{}) (interface{}, error) {
+		one := mgo.Var(name)
+		q := NewQuery()
+		q.name = name
+		q.model = one
+		if err := c.ShouldBindQuery(&q.Query); err != nil {
+			return nil, err
+		}
+		q.Cond = opts.RouteHooks.List.Cond(map[string]interface{}{"DeletedAt": map[string]interface{}{"$eq": nil}}, c, struct{ Name string }{Name: name})
+		if err := q.Build(q.Cond); err != nil {
+			return nil, err
+		}
+		return q, nil
 
-	if err := q.Build(q.Cond); err != nil {
+	}, func(ret interface{}) (interface{}, error) {
+		Model := mgo.Model(name)
+		list := mgo.Vars(name)
+		q := ret.(*Query)
+		if err := Model.Pipe(q.Pipe).All(list); err != nil {
+			return nil, err
+		}
+		totalrecords, _ := Model.Find(q.Cond).Count()
+		if q.Range != "ALL" {
+			totalpages := math.Ceil(float64(totalrecords) / float64(q.Size))
+			return gin.H{
+				"page":         q.Query.Page,
+				"size":         q.Query.Size,
+				"totalpages":   totalpages,
+				"range":        q.Query.Range,
+				"totalrecords": totalrecords,
+				"cond":         q.Cond,
+				"preload":      q.Query.Preload,
+				"list":         list,
+			}, nil
+		} else {
+			return gin.H{
+				"range":        q.Query.Range,
+				"totalrecords": totalrecords,
+				"cond":         q.Cond,
+				"preload":      q.Query.Preload,
+				"list":         list,
+			}, nil
+		}
+	})
+	if err != nil {
+		addition.RushLogger.Error(err.Error())
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
 		})
 		return
 	}
-
-	if err := Model.Pipe(q.Pipe).All(list); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
-		return
-	}
-	totalrecords, _ := Model.Find(q.Cond).Count()
-	if q.Range != "ALL" {
-		totalpages := math.Ceil(float64(totalrecords) / float64(q.Size))
-		c.JSON(http.StatusOK, gin.H{
-			"page":         q.Query.Page,
-			"size":         q.Query.Size,
-			"totalpages":   totalpages,
-			"range":        q.Query.Range,
-			"totalrecords": totalrecords,
-			"cond":         q.Cond,
-			"preload":      q.Query.Preload,
-			"list":         list,
-		})
-	} else {
-		c.JSON(http.StatusOK, gin.H{
-			"range":        q.Query.Range,
-			"totalrecords": totalrecords,
-			"cond":         q.Cond,
-			"preload":      q.Query.Preload,
-			"list":         list,
-		})
-	}
+	c.JSON(http.StatusOK, ret)
 }
 
 func create(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
