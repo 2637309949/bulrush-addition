@@ -20,12 +20,12 @@ type RotateFile struct {
 	MaxSize  int64
 }
 
-func (r *RotateFile) Write(p []byte) (int, error) {
+func (r *RotateFile) Write(p []byte) (n int, err error) {
+	var need = false
 	// Write to file
-	n, err := r.file.Write(p)
+	n, err = r.file.Write(p)
 	// Check to see if we need to end the stream and create a new one.
-	need, err := r.needsNewFile()
-	if need {
+	if need, err = r.needsNewFile(); need {
 		r.newFile()
 	}
 	return n, err

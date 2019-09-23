@@ -349,7 +349,6 @@ func (j *Journal) createWriter(level LEVEL) *MutiWriter {
 							Level: transport.Level,
 						})
 					}
-
 				}
 				if transport.Type == "File" {
 					f, _ := OpenFile(transport.Dirname, transport.Maxsize, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0600)
