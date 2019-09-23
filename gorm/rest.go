@@ -93,8 +93,7 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		one := ext.Var(name)
 		list := ext.Vars(name)
 		q := ret.(*Query)
-		db := ext.DB
-		db = db.
+		db := ext.DB.
 			Scopes(func(db *gorm.DB) *gorm.DB {
 				if q.Range != "ALL" {
 					db = db.Offset((q.Page - 1) * q.Size).Limit(q.Size)
@@ -126,7 +125,8 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 					db = db.Where(q.SQL)
 				}
 				return db
-			}).Find(list)
+			}).
+			Find(list)
 
 		if db.Error != nil {
 			return nil, db.Error
