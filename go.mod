@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	cloud.google.com/go v0.44.3 // indirect
-	github.com/2637309949/bulrush-utils v0.0.0-20190815130414-1d9237d59ead
+	github.com/2637309949/bulrush-utils v0.0.0-20190831033838-023613c5526f
 	github.com/denisenkom/go-mssqldb v0.0.0-20190820223206-44cdfe8d8ba9 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.4.0
@@ -27,8 +27,7 @@ require (
 	github.com/stretchr/testify v1.4.0 // indirect
 	github.com/thoas/go-funk v0.4.0
 	github.com/ugorji/go v1.1.7 // indirect
-	golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586 // indirect
-	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
-	golang.org/x/sys v0.0.0-20190825160603-fb81701db80f // indirect
+	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
+	golang.org/x/sys v0.0.0-20190922100055-0a153f010e69 // indirect
 	gopkg.in/go-playground/validator.v9 v9.29.1
 )
