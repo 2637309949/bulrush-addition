@@ -106,15 +106,14 @@ func list(name string, c *gin.Context, mgo *Mongo, opts *Opts) {
 					"preload":      q.Query.Preload,
 					"list":         list,
 				}, nil
-			} else {
-				return gin.H{
-					"range":        q.Query.Range,
-					"totalrecords": totalrecords,
-					"cond":         q.Cond,
-					"preload":      q.Query.Preload,
-					"list":         list,
-				}, nil
 			}
+			return gin.H{
+				"range":        q.Query.Range,
+				"totalrecords": totalrecords,
+				"cond":         q.Cond,
+				"preload":      q.Query.Preload,
+				"list":         list,
+			}, nil
 		},
 	)
 	if err != nil {
