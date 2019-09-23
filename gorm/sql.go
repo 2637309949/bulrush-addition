@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strings"
 
+	addition "github.com/2637309949/bulrush-addition"
 	"github.com/thoas/go-funk"
 )
 
@@ -20,7 +21,7 @@ func formatNull(key string, instruct string, value interface{}) string {
 
 // format string type
 func formatString(key string, instruct string, value interface{}) string {
-	return fmt.Sprintf("%s %s '%v'", key, instruct, value)
+	return fmt.Sprintf("%s %s '%v'", key, instruct, addition.MysqlRealEscapeString(value.(string)))
 }
 
 // format number type
