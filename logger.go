@@ -10,7 +10,8 @@ import (
 
 // RushLogger for app logger
 var RushLogger = logger.CreateLogger(logger.SILLY, nil, []*logger.Transport{
-	&logger.Transport{
-		Level: logger.SILLY,
-	},
+	logger.NewPrintTransport(logger.Transport{
+		Level:   logger.SILLY,
+		Maxsize: logger.Maxsize,
+	}),
 })

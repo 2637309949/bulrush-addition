@@ -6,7 +6,7 @@ package logger
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"runtime"
 	"sync"
 	"time"
@@ -41,10 +41,10 @@ type (
 	FormatFunc func(map[string]string) string
 	// Transport for Journal
 	Transport struct {
-		Type    string
 		Dirname string
 		Level   LEVEL
 		Maxsize int64
+		Writer  io.Writer
 	}
 	// Journal logger
 	Journal struct {
@@ -264,12 +264,7 @@ func (j *Journal) formatHeader(buf *[]byte, t time.Time, file string, line int) 
 	}
 }
 
-// Output writes the output for a logging event. The string s contains
-// the text to print after the prefix specified by the flags of the
-// Logger. A newline is appended if the last character of s is not
-// already a newline. Calldepth is used to recover the PC and is
-// provided for generality, although at the moment on all pre-defined
-// paths it will be 2.
+// Output writes the output for a logging event
 func (j *Journal) output(w *MutiWriter, calldepth int, s string) error {
 	now := time.Now()
 	var file string
@@ -306,11 +301,6 @@ func (j *Journal) AddTransports(transports ...*Transport) *Journal {
 		if transport.Level == 0 {
 			transport.Level = INFO
 		}
-		if transport.Dirname == "" {
-			transport.Type = "Print"
-		} else if transport.Dirname != "" {
-			transport.Type = "File"
-		}
 	}
 	j.transports = append(j.transports, transports...)
 	levels := []LEVEL{ERROR, WARN, INFO, VERBOSE, DEBUG, SILLY, HTTP}
@@ -335,28 +325,12 @@ func (j *Journal) AddTransports(transports ...*Transport) *Journal {
 func (j *Journal) createWriter(level LEVEL) *MutiWriter {
 	var writer *MutiWriter
 	if j.level >= level {
-		for _, transport := range j.transports {
-			if transport.Level >= level {
-				if transport.Type == "Print" {
-					if writer != nil {
-						writer = multiLevelWriter(writer, &LevelWriter{
-							W:     os.Stdout,
-							Level: transport.Level,
-						})
-					} else {
-						writer = multiLevelWriter(&LevelWriter{
-							W:     os.Stdout,
-							Level: transport.Level,
-						})
-					}
-				}
-				if transport.Type == "File" {
-					f, _ := OpenFile(transport.Dirname, transport.Maxsize, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0600)
-					if writer != nil {
-						writer = multiLevelWriter(writer, f)
-					} else {
-						writer = multiLevelWriter(f)
-					}
+		for _, t := range j.transports {
+			if t.Level >= level {
+				if writer != nil {
+					writer = multiLevelWriter(writer, t.Writer)
+				} else {
+					writer = multiLevelWriter(t.Writer)
 				}
 			}
 		}
@@ -370,11 +344,6 @@ func CreateLogger(level LEVEL, format FormatFunc, transports []*Transport) *Jour
 	for _, transport := range transports {
 		if transport.Level == 0 {
 			transport.Level = INFO
-		}
-		if transport.Dirname == "" {
-			transport.Type = "Print"
-		} else if transport.Dirname != "" {
-			transport.Type = "File"
 		}
 	}
 	j.format = format
