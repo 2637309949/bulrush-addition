@@ -164,7 +164,6 @@ func list(name string, c *gin.Context, ext *GORM, opts *Opts) {
 		return
 	}
 	c.JSON(http.StatusOK, ret)
-
 }
 
 func create(name string, c *gin.Context, ext *GORM, opts *Opts) {

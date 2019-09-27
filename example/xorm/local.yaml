@@ -1,0 +1,14 @@
+name: 'bulrush-xorm'
+port: ':8080'
+prefix: '/api'
+mode: 'debug'
+env: 'dev'
+logs:
+  path: '/logs'
+grpc:
+  srv1: '127.0.0.1:8081'
+sql:
+  dbType: 'mysql'
+  automigrate: true
+  url:
+    - 'root:111111@/xorm?charset=utf8&parseTime=True&loc=Local'
