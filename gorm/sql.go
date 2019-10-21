@@ -29,6 +29,11 @@ func formatNumber(key string, instruct string, value interface{}) string {
 	return fmt.Sprintf("%s %s %v", key, instruct, value)
 }
 
+// format number type
+func formatBoolean(key string, instruct string, value interface{}) string {
+	return fmt.Sprintf("%s %s %v", key, instruct, value)
+}
+
 // format array type
 func formatArray(key string, instruct string, value interface{}) string {
 	items := funk.Map(value, func(item interface{}) string {
@@ -71,6 +76,8 @@ func direct2Sql(key string, instruct string, value interface{}) string {
 		return formatString(key, instruct, value)
 	case isSlice(value):
 		return formatArray(key, instruct, value)
+	case isBoolean(value):
+		return formatBoolean(key, instruct, value)
 	}
 	andJoin := []string{}
 	if vmap, ok := value.(map[string]interface{}); ok {
@@ -127,13 +134,15 @@ func direct2Sql(key string, instruct string, value interface{}) string {
 }
 
 // flaten $or direct to $and
-func flatAndToOr(where map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	if or, ok := where["$or"]; ok && reflect.Slice == reflect.TypeOf(or).Kind() {
-		newMap := map[string]interface{}{}
-		newMap["$or"] = []map[string]interface{}{}
-		orArr := toArrayInterface(or)
-		for _, item := range orArr {
+func flatAndToOr(where map[string]interface{}) (m map[string]interface{}, err error) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			err = rec.(error)
+		}
+	}()
+	if or, ok := where["$or"]; ok && isSlice(or) {
+		wmap := map[string]interface{}{"$or": []map[string]interface{}{}}
+		funk.ForEach(or, func(item interface{}) {
 			subItem, ok := item.(map[string]interface{})
 			_, ok = subItem["$or"]
 			for wk, wv := range where {
@@ -144,12 +153,12 @@ func flatAndToOr(where map[string]interface{}) (map[string]interface{}, error) {
 			if ok {
 				subItem, err = flatAndToOr(subItem)
 				if err != nil {
-					return map[string]interface{}{}, errors.New("orMap2 error")
+					panic(err)
 				}
 			}
-			newMap["$or"] = append(newMap["$or"].([]map[string]interface{}), subItem)
-		}
-		return newMap, nil
+			wmap["$or"] = append(wmap["$or"].([]map[string]interface{}), subItem)
+		})
+		return wmap, nil
 	}
 	return where, nil
 }

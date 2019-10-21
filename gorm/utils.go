@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/2637309949/bulrush-utils/maps"
-	"github.com/thoas/go-funk"
 )
 
 var smap = maps.NewSafeMap()
@@ -101,12 +100,6 @@ func toColumnName(m *map[string]interface{}) {
 	}
 }
 
-func toArrayInterface(value interface{}) []interface{} {
-	return funk.Map(value, func(item interface{}) interface{} {
-		return item
-	}).([]interface{})
-}
-
 func isNumber(value interface{}) bool {
 	if value == nil {
 		return false
@@ -142,4 +135,11 @@ func isSlice(value interface{}) bool {
 		return false
 	}
 	return reflect.TypeOf(value).Kind() == reflect.Slice
+}
+
+func isBoolean(value interface{}) bool {
+	if value == nil {
+		return false
+	}
+	return reflect.TypeOf(value).Kind() == reflect.Bool
 }
