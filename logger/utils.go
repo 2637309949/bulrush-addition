@@ -117,8 +117,6 @@ func toLevelString(level LEVEL) string {
 		return "[BUL-debug]"
 	case SILLY:
 		return "[BUL-silly]"
-	case HTTP:
-		return "[BUL-http]"
 	}
 	return string(level)
 }
@@ -137,8 +135,6 @@ func toColorLevel(level LEVEL, text string) string {
 		return Blue(text)
 	case SILLY:
 		return Cyan(text)
-	case HTTP:
-		return Green(text)
 	default:
 		return text
 	}

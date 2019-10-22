@@ -65,10 +65,8 @@ type (
 const (
 	// Maxsize file size
 	Maxsize = 1024 * 1024 * 10
-	// HTTP level
-	HTTP LEVEL = iota + 1
 	// ERROR level
-	ERROR
+	ERROR LEVEL = iota + 1
 	// WARN level
 	WARN
 	// INFO level
@@ -183,23 +181,6 @@ func (j *Journal) Silly(format string, a ...interface{}) {
 	}
 }
 
-// HTTP level
-func (j *Journal) HTTP(format string, a ...interface{}) {
-	var r = funk.Find(j.writers, func(x struct {
-		l LEVEL
-		w *MutiWriter
-	}) bool {
-		return x.l == HTTP
-	}).(struct {
-		l LEVEL
-		w *MutiWriter
-	})
-	if r.w != nil {
-		r.w.Level = HTTP
-		j.fprintf(r.w, format, a...)
-	}
-}
-
 // Init Journal
 func (j *Journal) Init(init func(*Journal)) *Journal {
 	init(j)
@@ -303,7 +284,7 @@ func (j *Journal) AddTransports(transports ...*Transport) *Journal {
 		}
 	}
 	j.transports = append(j.transports, transports...)
-	levels := []LEVEL{ERROR, WARN, INFO, VERBOSE, DEBUG, SILLY, HTTP}
+	levels := []LEVEL{ERROR, WARN, INFO, VERBOSE, DEBUG, SILLY}
 	j.writers = make([]struct {
 		l LEVEL
 		w *MutiWriter
@@ -349,7 +330,7 @@ func CreateLogger(level LEVEL, format FormatFunc, transports []*Transport) *Jour
 	j.format = format
 	j.level = level
 	j.transports = transports
-	levels := []LEVEL{ERROR, WARN, INFO, VERBOSE, DEBUG, SILLY, HTTP}
+	levels := []LEVEL{ERROR, WARN, INFO, VERBOSE, DEBUG, SILLY}
 	for _, level := range levels {
 		writer := struct {
 			l LEVEL
